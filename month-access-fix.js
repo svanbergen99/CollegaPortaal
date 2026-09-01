@@ -6,14 +6,12 @@
   if (!bridge || !agendaBridge) return;
 
   const TIME_ZONE = "Europe/Amsterdam";
-  const REPO = "svanbergen99/Rooster";
   const FILE_MONTHS = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
   const nativeFetch = window.__roosterNativeFetch || window.fetch.bind(window);
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   const extraCache = new Map();
   const knownMonths = new Set();
-  const fileMeta = new Map();
 
   const originalGetState = bridge.getState.bind(bridge);
   const originalGetRoster = bridge.getRoster.bind(bridge);
@@ -27,12 +25,20 @@
   let externalActiveMonth = "";
   let discoveryPromise = null;
 
-  function currentYear() {
-    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE, year: "numeric" }).formatToParts(new Date());
+  function currentAmsterdamYear() {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: TIME_ZONE,
+      year: "numeric"
+    }).formatToParts(new Date());
     return Number(parts.find((part) => part.type === "year")?.value || new Date().getFullYear());
   }
 
-  function monthKeyForIndex(index, year = currentYear()) {
+  function rosterYear() {
+    const state = originalGetState() || {};
+    return Number(String(state.coreMonthKey || state.currentMonthKey || "").slice(0, 4)) || currentAmsterdamYear();
+  }
+
+  function monthKeyForIndex(index, year = rosterYear()) {
     return `${year}-${String(index + 1).padStart(2, "0")}`;
   }
 
@@ -86,35 +92,58 @@
       }
     }
     const periodMonth = String(index?.period?.month || "");
-    return periodMonth === monthKey || periodMonth === monthKey.slice(5, 7) || periodMonth === String(Number(monthKey.slice(5, 7)));
+    return periodMonth === monthKey
+      || periodMonth === monthKey.slice(5, 7)
+      || periodMonth === String(Number(monthKey.slice(5, 7)));
   }
 
-  async function discoverMonths() {
-    if (discoveryPromise) return discoveryPromise;
+  async function probeMonth(index, year) {
+    const monthKey = monthKeyForIndex(index, year);
+    const file = fileForMonth(monthKey);
+    if (!file) return;
+
+    try {
+      const response = await nativeFetch(`${file}?probe=${Date.now()}-${index}`, {
+        method: "HEAD",
+        cache: "no-store"
+      });
+      if (response.ok) {
+        knownMonths.add(monthKey);
+        return;
+      }
+      if (response.status !== 405 && response.status !== 501) return;
+    } catch (_) {}
+
+    try {
+      const response = await nativeFetch(`${file}?probe=${Date.now()}-${index}`, { cache: "no-store" });
+      if (response.ok) {
+        knownMonths.add(monthKey);
+        try { await response.body?.cancel(); } catch (_) {}
+      }
+    } catch (_) {}
+  }
+
+  async function discoverMonths(force = false) {
+    if (discoveryPromise && !force) return discoveryPromise;
+
     discoveryPromise = (async () => {
       const state = originalGetState() || {};
       for (const key of state.availableMonths || []) knownMonths.add(key);
-      const year = Number(String(state.coreMonthKey || state.currentMonthKey || "").slice(0, 4)) || currentYear();
 
-      try {
-        const response = await nativeFetch(`https://api.github.com/repos/${REPO}/git/trees/main?recursive=1`, {
-          cache: "no-store",
-          headers: { Accept: "application/vnd.github+json" }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          const paths = new Set((data.tree || []).map((entry) => String(entry?.path || "")));
-          FILE_MONTHS.forEach((monthName, index) => {
-            const file = `Roosterindex_${monthName}.json`;
-            if (paths.has(file)) knownMonths.add(monthKeyForIndex(index, year));
-          });
-        }
-      } catch (_) {}
+      const year = rosterYear();
+      await Promise.all(FILE_MONTHS.map((_, index) => probeMonth(index, year)));
 
-      window.dispatchEvent(new CustomEvent("rooster-months-updated", { detail: { discovered: true } }));
+      window.dispatchEvent(new CustomEvent("rooster-months-updated", {
+        detail: { discovered: true, months: [...knownMonths].sort() }
+      }));
       return [...knownMonths].sort();
     })();
-    return discoveryPromise;
+
+    try {
+      return await discoveryPromise;
+    } finally {
+      if (force) discoveryPromise = null;
+    }
   }
 
   async function decryptMonth(monthKey) {
@@ -125,6 +154,7 @@
 
     const file = fileForMonth(monthKey);
     if (!file) return null;
+
     let response;
     try {
       response = await nativeFetch(`${file}?v=${Date.now()}`, { cache: "no-store" });
@@ -134,7 +164,6 @@
     if (!response.ok) return null;
 
     knownMonths.add(monthKey);
-    fileMeta.set(monthKey, { file, lastModified: response.headers.get("Last-Modified") || "" });
 
     let secured;
     try {
@@ -142,6 +171,7 @@
     } catch (_) {
       return null;
     }
+
     if (secured?.kind !== "roosterhulp-encrypted-index" || secured?.encrypted !== true || !secured.crypto || !secured.payload) return null;
 
     try {
@@ -156,15 +186,20 @@
         name: "AES-GCM",
         length: Number(secured.crypto.keyLength) || 256
       }, false, ["decrypt"]);
+
       const plaintext = await crypto.subtle.decrypt({
         name: "AES-GCM",
         iv: base64ToBytes(secured.crypto.iv)
       }, key, base64ToBytes(secured.payload));
+
       const parsed = JSON.parse(decoder.decode(plaintext));
       if (parsed?.kind !== "roosterhulp-index" || !Array.isArray(parsed.employees)) return null;
       if (!indexContainsMonth(parsed, monthKey)) return null;
+
       extraCache.set(monthKey, parsed);
-      window.dispatchEvent(new CustomEvent("rooster-months-updated", { detail: { monthKey, decrypted: true } }));
+      window.dispatchEvent(new CustomEvent("rooster-months-updated", {
+        detail: { monthKey, decrypted: true }
+      }));
       return parsed;
     } catch (_) {
       return null;
@@ -177,40 +212,6 @@
       || "";
   }
 
-  function formatUpdateDate(value) {
-    const date = value ? new Date(value) : null;
-    if (!date || Number.isNaN(date.getTime())) return "";
-    return new Intl.DateTimeFormat("nl-NL", {
-      timeZone: TIME_ZONE,
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    }).format(date).replace(",", "");
-  }
-
-  async function updateStamp(monthKey) {
-    const stamp = document.getElementById("rosterUpdateStamp");
-    if (!stamp) return;
-    const file = fileForMonth(monthKey);
-    stamp.textContent = "Update: laden…";
-    let updatedAt = "";
-    try {
-      const response = await nativeFetch(`https://api.github.com/repos/${REPO}/commits?path=${encodeURIComponent(file)}&per_page=1`, {
-        cache: "no-store",
-        headers: { Accept: "application/vnd.github+json" }
-      });
-      if (response.ok) {
-        const commits = await response.json();
-        updatedAt = commits?.[0]?.commit?.committer?.date || commits?.[0]?.commit?.author?.date || "";
-      }
-    } catch (_) {}
-    if (!updatedAt) updatedAt = fileMeta.get(monthKey)?.lastModified || "";
-    const formatted = formatUpdateDate(updatedAt);
-    stamp.textContent = formatted ? `Update: ${formatted}` : "Update: tijd onbekend";
-  }
-
   function updatePeriod(index) {
     const period = document.querySelector("#rosterResult .period");
     if (!period || !index) return;
@@ -219,13 +220,29 @@
     period.hidden = !label;
   }
 
+  function showLoadError(monthKey) {
+    const result = document.getElementById("rosterResult");
+    const view = result?.querySelector(".personal-month-view");
+    if (!view) return;
+
+    const monthIndex = Number(monthKey.slice(5, 7)) - 1;
+    const name = FILE_MONTHS[monthIndex]?.toLocaleLowerCase("nl-NL") || monthKey;
+    let message = view.querySelector(".personal-month-load-error");
+    if (!message) {
+      message = document.createElement("div");
+      message.className = "personal-month-load-error";
+      view.prepend(message);
+    }
+    message.textContent = `Het rooster van ${name} kon niet worden geopend met de huidige inloggegevens.`;
+  }
+
   bridge.getState = function enhancedGetState() {
     const state = originalGetState() || {};
-    const allMonths = new Set([...(state.availableMonths || []), ...knownMonths, ...extraCache.keys()]);
+    const months = new Set([...(state.availableMonths || []), ...knownMonths, ...extraCache.keys()]);
     return {
       ...state,
       activeMonthKey: externalActiveMonth || state.activeMonthKey,
-      availableMonths: [...allMonths].sort()
+      availableMonths: [...months].sort()
     };
   };
 
@@ -250,6 +267,7 @@
         combined.push({ monthKey, date: schedule.date, start: schedule.start, end: schedule.end });
       }
     }
+
     const seen = new Set();
     return combined
       .filter((schedule) => {
@@ -273,14 +291,15 @@
 
     const index = await decryptMonth(monthKey);
     if (!index) {
-      window.dispatchEvent(new CustomEvent("rooster-month-load-failed", { detail: { monthKey } }));
+      showLoadError(monthKey);
       return false;
     }
 
     externalActiveMonth = monthKey;
     updatePeriod(index);
-    updateStamp(monthKey);
-    window.dispatchEvent(new CustomEvent("rooster-month-changed", { detail: { monthKey, external: true } }));
+    window.dispatchEvent(new CustomEvent("rooster-month-changed", {
+      detail: { monthKey, external: true }
+    }));
     return true;
   };
 
@@ -290,6 +309,7 @@
 
     const index = extraCache.get(externalActiveMonth) || originalGetRoster(externalActiveMonth);
     if (!index) return { ...base, monthKey: externalActiveMonth, schedules: [] };
+
     const name = selectedEmployeeName() || base.name || "";
     const employee = getEmployee(index, name);
     const periodLabel = index?.period?.label && index.period.label !== "unknown" ? index.period.label : "";
@@ -310,37 +330,13 @@
   }, true);
 
   window.addEventListener("rooster-unlocked", () => {
-    discoverMonths();
+    discoverMonths(true);
   });
 
   window.addEventListener("rooster-employee-selected", () => {
     externalActiveMonth = "";
   });
 
-  window.addEventListener("rooster-relocked", () => {
-    sessionId = "";
-    sessionPassword = "";
-    externalActiveMonth = "";
-    extraCache.clear();
-  });
-
-  window.addEventListener("rooster-month-load-failed", (event) => {
-    const monthKey = event.detail?.monthKey || "";
-    if (!monthKey) return;
-    const monthIndex = Number(monthKey.slice(5, 7)) - 1;
-    const name = FILE_MONTHS[monthIndex]?.toLocaleLowerCase("nl-NL") || monthKey;
-    const result = document.getElementById("rosterResult");
-    const view = result?.querySelector(".personal-month-view");
-    if (!view) return;
-    let message = view.querySelector(".personal-month-load-error");
-    if (!message) {
-      message = document.createElement("div");
-      message.className = "personal-month-load-error";
-      view.prepend(message);
-    }
-    message.textContent = `Het rooster van ${name} kon niet worden ontsleuteld met de huidige inloggegevens.`;
-  });
-
   for (const key of originalGetState()?.availableMonths || []) knownMonths.add(key);
-  discoverMonths();
+  discoverMonths(true);
 })();
