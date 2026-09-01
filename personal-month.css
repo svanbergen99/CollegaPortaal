@@ -226,3 +226,95 @@ html[data-theme="dark"] .personal-month-day.past .personal-month-shift-time {
   .personal-month-title h3 { font-size: 20px; }
   .personal-month-calendar { min-width: 1120px; }
 }
+
+.personal-month-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 14px;
+}
+.personal-month-summary > div {
+  min-width: 0;
+  padding: 11px 13px;
+  border: 1px solid #d9e0e8;
+  border-radius: 11px;
+  background: rgba(255,255,255,.88);
+}
+.personal-month-summary span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.personal-month-summary strong {
+  display: block;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.personal-month-title { align-items: center; }
+.personal-month-nav {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-width: min(680px, 100%);
+}
+.personal-month-nav h3 {
+  text-align: center;
+}
+.personal-month-nav-button {
+  min-height: 36px;
+  padding: 8px 11px;
+  border: 1px solid #cfc4ce;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--accent-dark);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.personal-month-nav-button:hover:not(:disabled) { background: var(--soft-accent); }
+.personal-month-nav-button:disabled {
+  opacity: .38;
+  cursor: default;
+}
+.personal-month-caption {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+html[data-theme="dark"] .personal-month-summary > div {
+  border-color: #394454;
+  background: #171e29;
+}
+html[data-theme="dark"] .personal-month-nav-button {
+  border-color: #465263;
+  background: #171e29;
+  color: #e9b0e2;
+}
+html[data-theme="dark"] .personal-month-nav-button:hover:not(:disabled) {
+  background: var(--soft-accent);
+}
+
+@media (max-width: 760px) {
+  .personal-month-summary { grid-template-columns: 1fr; }
+  .personal-month-nav {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: 1fr 1fr;
+  }
+  .personal-month-nav h3 {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    text-align: left;
+  }
+  .personal-month-nav-button { width: 100%; }
+  .personal-month-caption { white-space: normal; }
+}
