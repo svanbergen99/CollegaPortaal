@@ -98,7 +98,7 @@ function buildCalendarHtml(data) {
   }
   return {
     model,
-    html: `<div class="screenshot-calendar-sheet" data-calendar-sheet><div class="screenshot-calendar-heading"><strong>${monthNames[model.monthIndex]} ${model.year}</strong><span>${escapeHtml(data.name)}</span></div><div class="screenshot-calendar-weekdays">${weekdays.map((day) => `<div class="screenshot-calendar-weekday">${day}</div>`).join("")}</div><div class="screenshot-calendar-grid">${cells.join("")}</div></div>`
+    html: `<div class="screenshot-calendar-sheet" data-calendar-sheet><div class="screenshot-calendar-heading"><strong>${monthNames[model.monthIndex]} ${model.year}</strong></div><div class="screenshot-calendar-weekdays">${weekdays.map((day) => `<div class="screenshot-calendar-weekday">${day}</div>`).join("")}</div><div class="screenshot-calendar-grid">${cells.join("")}</div></div>`
   };
 }
 function ensureOverlay() {
@@ -148,7 +148,7 @@ function saveImage() {
   if (!data?.name) return;
   const model = monthModel(data);
   const width = 1400;
-  const headerHeight = 150;
+  const headerHeight = 112;
   const weekdaysHeight = 72;
   const rowHeight = model.rows === 5 ? 146 : 132;
   const height = headerHeight + weekdaysHeight + model.rows * rowHeight + 2;
@@ -161,10 +161,7 @@ function saveImage() {
   ctx.fillRect(0, 0, width, height);
   ctx.fillStyle = "#172033";
   ctx.font = "700 38px Arial";
-  drawCentered(ctx, `${monthNames[model.monthIndex]} ${model.year}`, 0, 58, width);
-  ctx.font = "700 22px Arial";
-  ctx.fillStyle = "#596579";
-  drawCentered(ctx, data.name, 0, 96, width);
+  drawCentered(ctx, `${monthNames[model.monthIndex]} ${model.year}`, 0, 67, width);
   ctx.strokeStyle = "#d9e0e8";
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -216,7 +213,7 @@ function saveImage() {
   }
   const link = document.createElement("a");
   link.href = canvas.toDataURL("image/png");
-  link.download = `Werkrooster_${data.name.replace(/[^\p{L}\p{N}]+/gu, "_").replace(/^_+|_+$/g, "")}_${model.monthKey}.png`;
+  link.download = `Werkrooster_${model.monthKey}.png`;
   document.body.appendChild(link);
   link.click();
   link.remove();
