@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "20260902-3";
+  const VERSION = "20260902-4";
   const FILE_MONTHS = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
 
   function currentAmsterdamMonth() {
@@ -69,6 +69,7 @@
   loadStyle("roster-extras.css");
   loadStyle("personal-month.css");
   loadStyle("session-timeout.css");
+  loadStyle("legend.css");
 
   loadScript("roster-controller.js");
   loadScript("timezone-background.js");
@@ -77,6 +78,7 @@
   loadScript("agenda-timezone.js");
   loadScript("workers-view.js");
   loadScript("today-workers-close.js");
+  loadScript("legend.js");
   loadScript("screenshot-theme.js");
   loadScript("personal-month.js");
   loadScript("session-timeout.js");
