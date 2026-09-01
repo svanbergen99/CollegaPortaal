@@ -8,40 +8,58 @@
     * { box-sizing: border-box; }
     html, body { margin: 0; min-height: 100%; font-family: Arial, sans-serif; background: #f4f6f8; color: #1f2937; }
     body.locked { overflow: hidden; }
-    #app { display: none; min-height: 100vh; padding: 48px 20px; }
-    #app.visible { display: block; }
+
+    #app { min-height: 100vh; padding: 48px 20px; }
     .page-card { max-width: 760px; margin: 0 auto; background: #fff; border-radius: 20px; padding: 32px; box-shadow: 0 18px 50px rgba(0,0,0,.08); }
-    .login-overlay { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: rgba(15,23,42,.82); padding: 20px; }
-    .login-overlay.hidden { display: none; }
-    .login-card { width: min(420px, 100%); background: #fff; border-radius: 20px; padding: 30px; box-shadow: 0 24px 70px rgba(0,0,0,.28); }
-    .login-card h1 { margin: 0 0 8px; font-size: 28px; }
-    .login-card p { margin: 0 0 24px; color: #64748b; }
-    label { display: block; margin: 16px 0 7px; font-weight: 700; }
-    input { width: 100%; padding: 13px 14px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 16px; outline: none; }
-    input:focus { border-color: #475569; box-shadow: 0 0 0 3px rgba(71,85,105,.12); }
-    button { width: 100%; margin-top: 20px; padding: 13px 16px; border: 0; border-radius: 12px; background: #0f172a; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
+
+    .welcome-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: grid;
+      place-items: center;
+      background: rgba(15,23,42,.82);
+      padding: 20px;
+    }
+
+    .welcome-overlay.hidden { display: none; }
+
+    .welcome-card {
+      width: min(420px, 100%);
+      background: #fff;
+      border-radius: 20px;
+      padding: 32px;
+      text-align: center;
+      box-shadow: 0 24px 70px rgba(0,0,0,.28);
+    }
+
+    .welcome-card h1 { margin: 0; font-size: 30px; }
+
+    button {
+      width: 100%;
+      margin-top: 26px;
+      padding: 13px 16px;
+      border: 0;
+      border-radius: 12px;
+      background: #0f172a;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
     button:hover { background: #1e293b; }
-    .error { min-height: 22px; margin-top: 12px; color: #b91c1c; font-size: 14px; font-weight: 700; }
   </style>
 </head>
 <body class="locked">
-  <div id="loginOverlay" class="login-overlay" aria-modal="true" role="dialog" aria-labelledby="loginTitle">
-    <form id="loginForm" class="login-card" autocomplete="off">
-      <h1 id="loginTitle">Toegang rooster</h1>
-      <p>Vul je ID en wachtwoord in om verder te gaan.</p>
-
-      <label for="loginId">ID</label>
-      <input id="loginId" name="loginId" type="text" autocomplete="off" required>
-
-      <label for="loginPassword">Wachtwoord</label>
-      <input id="loginPassword" name="loginPassword" type="password" autocomplete="new-password" required>
-
-      <button type="submit">Inloggen</button>
-      <div id="loginError" class="error" aria-live="polite"></div>
-    </form>
+  <div id="welcomeOverlay" class="welcome-overlay" aria-modal="true" role="dialog" aria-labelledby="welcomeTitle">
+    <div class="welcome-card">
+      <h1 id="welcomeTitle">Welkom Collega's</h1>
+      <button id="continueButton" type="button">Verder</button>
+    </div>
   </div>
 
-  <main id="app" aria-hidden="true">
+  <main id="app">
     <div class="page-card">
       <h1>Rooster bekijken</h1>
       <p>Voer je naam in om je rooster te bekijken.</p>
@@ -50,49 +68,12 @@
 
   <script>
     (() => {
-      const ACCESS_HASH = "42d2ad8f9053fc7b6515b15101a913ab725db805ba29288804ab9af57b6cf6c5";
-      const overlay = document.getElementById("loginOverlay");
-      const form = document.getElementById("loginForm");
-      const idInput = document.getElementById("loginId");
-      const passwordInput = document.getElementById("loginPassword");
-      const error = document.getElementById("loginError");
-      const app = document.getElementById("app");
+      const overlay = document.getElementById("welcomeOverlay");
+      const continueButton = document.getElementById("continueButton");
 
-      async function sha256(value) {
-        const data = new TextEncoder().encode(value);
-        const digest = await crypto.subtle.digest("SHA-256", data);
-        return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
-      }
-
-      function unlock() {
+      continueButton.addEventListener("click", () => {
         overlay.classList.add("hidden");
-        app.classList.add("visible");
-        app.setAttribute("aria-hidden", "false");
         document.body.classList.remove("locked");
-        sessionStorage.setItem("roosterAccess", "granted");
-      }
-
-      if (sessionStorage.getItem("roosterAccess") === "granted") {
-        unlock();
-      } else {
-        requestAnimationFrame(() => idInput.focus());
-      }
-
-      form.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        error.textContent = "";
-        const entered = `${idInput.value.trim()}|${passwordInput.value}`;
-        const enteredHash = await sha256(entered);
-
-        if (enteredHash === ACCESS_HASH) {
-          passwordInput.value = "";
-          unlock();
-          return;
-        }
-
-        error.textContent = "ID of wachtwoord is onjuist.";
-        passwordInput.value = "";
-        passwordInput.focus();
       });
 
       document.addEventListener("keydown", (event) => {
@@ -104,7 +85,6 @@
       overlay.addEventListener("click", (event) => {
         if (event.target === overlay) {
           event.preventDefault();
-          idInput.focus();
         }
       });
     })();
