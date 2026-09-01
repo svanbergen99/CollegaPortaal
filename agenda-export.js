@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "20260902-7";
+  const VERSION = "20260902-8";
   const FILE_MONTHS = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
 
   function currentAmsterdamMonth() {
