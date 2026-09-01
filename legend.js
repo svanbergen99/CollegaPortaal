@@ -1,8 +1,8 @@
 (() => {
   "use strict";
 
-  const action = document.querySelector(".today-workers-action");
-  if (!action) return;
+  const rosterResult = document.getElementById("rosterResult");
+  if (!rosterResult) return;
 
   const WFM_LEGEND = [
     ["Days off", "#95D594"],
@@ -52,6 +52,9 @@
     ["Verlof Calamiteit_u", "#60BE6D"]
   ];
 
+  let details = null;
+  let syncTimer = null;
+
   function normalize(value) {
     return String(value || "").trim().toLocaleLowerCase("nl-NL");
   }
@@ -61,15 +64,17 @@
     return /^#[0-9a-f]{6}$/i.test(color) ? color.toUpperCase() : "";
   }
 
-  const details = document.createElement("details");
-  details.className = "wfm-legend";
-  details.innerHTML = `<summary><span>Legenda</span><span class="wfm-legend-arrow" aria-hidden="true">⌄</span></summary><div class="wfm-legend-panel"><p class="wfm-legend-intro">Kleurenlegenda van WFM.</p><div class="wfm-legend-grid" data-wfm-legend-grid></div></div>`;
-  action.insertAdjacentElement("afterend", details);
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
 
-  const grid = details.querySelector("[data-wfm-legend-grid]");
-  const entries = new Map(WFM_LEGEND.map(([name, color]) => [normalize(name), { name, color }]));
-
-  function collectLiveColors() {
+  function collectEntries() {
+    const entries = new Map(WFM_LEGEND.map(([name, color]) => [normalize(name), { name, color }]));
     const monthBridge = window.RoosterMonthBridge;
     const months = monthBridge?.getState?.().availableMonths || [];
     for (const monthKey of months) {
@@ -86,21 +91,61 @@
         }
       }
     }
+    return entries;
   }
 
   function render() {
-    collectLiveColors();
-    grid.innerHTML = [...entries.values()].map(({ name, color }) => `
+    if (!details?.isConnected) return;
+    const grid = details.querySelector("[data-wfm-legend-grid]");
+    if (!grid) return;
+    grid.innerHTML = [...collectEntries().values()].map(({ name, color }) => `
       <div class="wfm-legend-item">
         <span class="wfm-legend-color" style="--legend-color:${color}" aria-hidden="true"></span>
-        <span class="wfm-legend-name">${name.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</span>
+        <span class="wfm-legend-name">${escapeHtml(name)}</span>
       </div>`).join("");
   }
 
-  details.addEventListener("toggle", () => {
-    if (details.open) render();
+  function createLegend() {
+    const element = document.createElement("details");
+    element.className = "wfm-legend";
+    element.innerHTML = `<summary><span>Legenda</span><span class="wfm-legend-arrow" aria-hidden="true">⌄</span></summary><div class="wfm-legend-panel"><p class="wfm-legend-intro">Kleurenlegenda van WFM.</p><div class="wfm-legend-grid" data-wfm-legend-grid></div></div>`;
+    element.addEventListener("toggle", () => {
+      if (element.open) render();
+    });
+    return element;
+  }
+
+  function sync() {
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => {
+      const personalMonth = rosterResult.querySelector(".personal-month-view");
+      const isPersonalRoster = !rosterResult.hidden
+        && Boolean(rosterResult.querySelector(".employee-head"))
+        && Boolean(personalMonth)
+        && !rosterResult.querySelector(".today-workers-head");
+
+      if (!isPersonalRoster) {
+        if (details?.isConnected) details.remove();
+        details = null;
+        return;
+      }
+
+      if (!details || !details.isConnected) details = createLegend();
+      if (details.nextElementSibling !== personalMonth) personalMonth.before(details);
+      if (details.open) render();
+    }, 0);
+  }
+
+  const observer = new MutationObserver(sync);
+  observer.observe(rosterResult, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"] });
+
+  window.addEventListener("rooster-unlocked", sync);
+  window.addEventListener("rooster-employee-selected", sync);
+  window.addEventListener("rooster-month-changed", sync);
+  window.addEventListener("rooster-months-updated", () => {
+    sync();
+    if (details?.open) render();
   });
-  window.addEventListener("rooster-unlocked", render);
-  window.addEventListener("rooster-months-updated", () => { if (details.open) render(); });
-  render();
+
+  sync();
 })();
