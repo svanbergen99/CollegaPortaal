@@ -226,7 +226,7 @@
   <main id="app" hidden>
     <section class="search-card">
       <h1>Rooster bekijken</h1>
-      <p class="search-intro">Voer je volledige naam in. De volgorde van je voornaam en achternaam maakt niet uit.</p>
+      <p class="search-intro">Voer je voor of achternaam in. De volgorde van je voornaam en achternaam maakt niet uit.</p>
 
       <form id="nameForm" autocomplete="off">
         <label for="employeeName">Naam</label>
@@ -370,8 +370,7 @@
             const candidate = normalizeSearchText(employee.name);
             return parts.every((part) => candidate.includes(part));
           })
-          .sort((a, b) => String(a.name).localeCompare(String(b.name), "nl-NL"))
-          .slice(0, 8);
+          .sort((a, b) => String(a.name).localeCompare(String(b.name), "nl-NL"));
         activeSuggestion = -1;
         if (!suggestionMatches.length) return hideSuggestions();
         nameSuggestions.innerHTML = suggestionMatches.map((employee, index) =>
