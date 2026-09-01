@@ -153,7 +153,44 @@ transition: padding .2s ease, box-shadow .2s ease;
 .suggestion { display: block; width: 100%; margin: 0; padding: 11px 12px; border-radius: 8px; background: transparent; color: var(--ink); text-align: left; font-weight: 700; }
 .suggestion:hover, .suggestion.active { background: #f2eaf1; color: var(--accent-dark); }
 .search-row button { min-width: 150px; }
+.today-workers-action { display: flex; margin-top: 12px; }
+.today-workers-button {
+width: 100%;
+min-height: 42px;
+background: #fff;
+color: var(--accent-dark);
+border: 1px solid #cfc4ce;
+box-shadow: 0 2px 7px rgba(15, 23, 42, .05);
+}
+.today-workers-button:hover { background: var(--soft-accent); border-color: #bca9ba; }
 .search-message { min-height: 22px; margin-top: 12px; color: var(--danger); font-weight: 700; font-size: 14px; }
+.today-workers-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.today-workers-head h2 { margin: 0; font-size: 25px; }
+.today-workers-date { margin: 5px 0 0; color: var(--muted); font-weight: 700; text-transform: capitalize; }
+.today-workers-count { color: var(--muted); font-size: 14px; font-weight: 800; }
+.today-workers-list { display: grid; gap: 8px; margin-top: 18px; }
+.today-worker-row {
+display: grid;
+grid-template-columns: minmax(0, 1fr) auto;
+align-items: center;
+gap: 14px;
+padding: 12px 14px;
+border: 1px solid var(--line);
+border-radius: 12px;
+background: #fff;
+box-shadow: 0 2px 7px rgba(15, 23, 42, .04);
+}
+.today-worker-name { font-weight: 800; overflow-wrap: anywhere; }
+.today-worker-time {
+padding: 5px 8px;
+border: 1px solid #e2e7ed;
+border-radius: 999px;
+background: #f5f7f9;
+color: #526073;
+font-size: 13.5px;
+font-weight: 800;
+white-space: nowrap;
+}
 .roster-result { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 20px; }
 .employee-head { display: flex; gap: 16px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
 .employee-name { margin: 0; font-size: 25px; }
@@ -253,6 +290,9 @@ background: var(--activity-color, #dbe2ea);
 #app { padding: 24px 10px; }
 .search-row { grid-template-columns: 1fr; }
 .search-row button { width: 100%; }
+.today-workers-action { margin-top: 10px; }
+.today-worker-row { padding: 11px 12px; }
+.today-workers-head h2 { font-size: 22px; }
 .employee-head { gap: 6px 12px; }
 .employee-name { font-size: 22px; }
 .roster-tools button { width: 100%; }
@@ -265,6 +305,8 @@ background: var(--activity-color, #dbe2ea);
 .activity-time { font-size: 12.5px; }
 }
 @media (max-width: 430px) {
+.today-worker-row { grid-template-columns: 1fr; gap: 6px; }
+.today-worker-time { justify-self: start; }
 .schedule-head { grid-template-columns: 1fr; }
 .schedule-time { justify-self: start; }
 .activity { grid-template-columns: 1fr; gap: 3px; }
@@ -308,6 +350,9 @@ background: var(--activity-color, #dbe2ea);
 <button type="submit">Rooster bekijken</button>
 </div>
 </form>
+<div class="today-workers-action">
+<button id="whoWorksTodayButton" class="today-workers-button" type="button">Wie werkt vandaag</button>
+</div>
 <div id="searchMessage" class="search-message" aria-live="polite"></div>
 <section id="rosterResult" class="roster-result" hidden></section>
 </section>
@@ -333,6 +378,7 @@ const unlockError = document.getElementById("unlockError");
 const app = document.getElementById("app");
 const searchCard = document.querySelector(".search-card");
 const nameForm = document.getElementById("nameForm");
+const whoWorksTodayButton = document.getElementById("whoWorksTodayButton");
 const employeeName = document.getElementById("employeeName");
 const searchMessage = document.getElementById("searchMessage");
 const rosterResult = document.getElementById("rosterResult");
@@ -618,6 +664,53 @@ return /^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(color) ? color : "#dbe2ea";
 function todayKey() {
 return localDateKey(new Date());
 }
+function validShiftTime(value) {
+const formatted = formatTime(value);
+return /^\d{2}:\d{2}$/.test(formatted) ? formatted : "";
+}
+function renderWhoWorksToday() {
+if (!rosterIndex) return;
+const today = todayKey();
+const workers = [];
+for (const employee of rosterIndex.employees) {
+const schedules = Array.isArray(employee.schedules) ? employee.schedules : [];
+const todaySchedules = schedules
+.filter((schedule) => String(schedule.date || "").slice(0, 10) === today)
+.map((schedule) => ({
+start: validShiftTime(schedule.start),
+end: validShiftTime(schedule.end)
+}))
+.filter((schedule) => schedule.start && schedule.end);
+if (!todaySchedules.length) continue;
+todaySchedules.sort((a, b) => a.start.localeCompare(b.start) || a.end.localeCompare(b.end));
+workers.push({ name: employee.name, schedules: todaySchedules });
+}
+workers.sort((a, b) => {
+const firstA = a.schedules[0]?.start || "99:99";
+const firstB = b.schedules[0]?.start || "99:99";
+return firstA.localeCompare(firstB) || String(a.name).localeCompare(String(b.name), "nl-NL");
+});
+currentEmployee = null;
+showFullRoster = false;
+hideSuggestions();
+searchMessage.textContent = "";
+const rows = workers.map((worker) => {
+const ranges = worker.schedules.map((schedule) => `${schedule.start} – ${schedule.end}`).join(", ");
+return `<div class="today-worker-row"><span class="today-worker-name">${escapeHtml(worker.name)}</span><span class="today-worker-time">${escapeHtml(ranges)}</span></div>`;
+}).join("");
+const todayDate = new Date(`${today}T12:00:00`);
+rosterResult.innerHTML = `
+<div class="today-workers-head">
+<div>
+<h2>Wie werkt vandaag</h2>
+<p class="today-workers-date">${escapeHtml(formatDate(today))}</p>
+</div>
+<span class="today-workers-count">${workers.length} collega${workers.length === 1 ? "" : "'s"}</span>
+</div>
+<div class="today-workers-list">${rows || '<div class="no-activities">Er zijn vandaag geen collega\'s met een werkdienst gevonden.</div>'}</div>`;
+rosterResult.hidden = false;
+searchCard.classList.add("has-roster");
+}
 function renderEmployee(employee, showAll = false) {
 currentEmployee = employee;
 showFullRoster = showAll;
@@ -745,11 +838,16 @@ const button = event.target.closest('[data-action="toggle-full-roster"]');
 if (!button || !currentEmployee) return;
 renderEmployee(currentEmployee, !showFullRoster);
 });
+whoWorksTodayButton.addEventListener("click", () => {
+renderWhoWorksToday();
+});
 nameForm.addEventListener("submit", (event) => {
 event.preventDefault();
 searchMessage.textContent = "";
 hideSuggestions();
 searchCard.classList.remove("has-roster");
+currentEmployee = null;
+showFullRoster = false;
 rosterResult.hidden = true;
 rosterResult.innerHTML = "";
 const signature = nameSignature(employeeName.value);
