@@ -25,12 +25,18 @@
   let externalActiveMonth = "";
   let discoveryPromise = null;
 
-  function currentAmsterdamYear() {
+  function currentAmsterdamParts() {
     const parts = new Intl.DateTimeFormat("en-CA", {
       timeZone: TIME_ZONE,
-      year: "numeric"
+      year: "numeric",
+      month: "2-digit"
     }).formatToParts(new Date());
-    return Number(parts.find((part) => part.type === "year")?.value || new Date().getFullYear());
+    const get = (type) => parts.find((part) => part.type === type)?.value || "";
+    return { year: Number(get("year")), month: Number(get("month")) };
+  }
+
+  function currentAmsterdamYear() {
+    return currentAmsterdamParts().year || new Date().getFullYear();
   }
 
   function rosterYear() {
@@ -233,12 +239,20 @@
       message.className = "personal-month-load-error";
       view.prepend(message);
     }
-    message.textContent = `Het rooster van ${name} kon niet worden geopend met de huidige inloggegevens.`;
+    message.textContent = `Het rooster van ${name} kon niet worden geopend. Controleer of het maandbestand bestaat en met dezelfde ID en hetzelfde wachtwoord is beveiligd.`;
   }
 
   bridge.getState = function enhancedGetState() {
     const state = originalGetState() || {};
     const months = new Set([...(state.availableMonths || []), ...knownMonths, ...extraCache.keys()]);
+    const year = rosterYear();
+    const current = currentAmsterdamParts();
+    const ceilingMonth = current.year === year ? current.month : 12;
+
+    for (let index = 0; index < ceilingMonth; index += 1) {
+      months.add(monthKeyForIndex(index, year));
+    }
+
     return {
       ...state,
       activeMonthKey: externalActiveMonth || state.activeMonthKey,
@@ -280,9 +294,6 @@
   };
 
   bridge.switchMonth = async function enhancedSwitchMonth(monthKey) {
-    await discoverMonths();
-    if (!knownMonths.has(monthKey) && !extraCache.has(monthKey) && !originalGetRoster(monthKey)) return false;
-
     const originalLoaded = originalGetRoster(monthKey);
     if (originalLoaded) {
       externalActiveMonth = "";
