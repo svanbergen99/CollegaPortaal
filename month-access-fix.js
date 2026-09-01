@@ -48,6 +48,13 @@
     return `${year}-${String(index + 1).padStart(2, "0")}`;
   }
 
+  function shiftMonthKey(monthKey, amount) {
+    const match = String(monthKey || "").match(/^(\d{4})-(\d{2})$/);
+    if (!match) return "";
+    const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1 + amount, 1));
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+  }
+
   function fileForMonth(monthKey) {
     const month = Number(String(monthKey).slice(5, 7));
     if (!(month >= 1 && month <= 12)) return "";
@@ -101,6 +108,46 @@
     return periodMonth === monthKey
       || periodMonth === monthKey.slice(5, 7)
       || periodMonth === String(Number(monthKey.slice(5, 7)));
+  }
+
+  function loadedIndexes() {
+    const state = originalGetState() || {};
+    const keys = new Set([...(state.availableMonths || []), ...extraCache.keys()]);
+    const result = [];
+    for (const key of keys) {
+      const index = extraCache.get(key) || originalGetRoster(key);
+      if (index) result.push([key, index]);
+    }
+    return result;
+  }
+
+  function mergeSchedulesForMonth(name, monthKey, primarySchedules) {
+    const primary = (Array.isArray(primarySchedules) ? primarySchedules : [])
+      .filter((schedule) => String(schedule?.date || "").slice(0, 7) === monthKey);
+
+    const result = [...primary];
+    const filledDates = new Set(primary.map((schedule) => String(schedule?.date || "").slice(0, 10)).filter(Boolean));
+
+    for (const [, index] of loadedIndexes()) {
+      const employee = getEmployee(index, name);
+      if (!employee) continue;
+
+      const byDate = new Map();
+      for (const schedule of mapSchedules(employee)) {
+        const date = String(schedule?.date || "").slice(0, 10);
+        if (!date.startsWith(`${monthKey}-`) || filledDates.has(date)) continue;
+        if (!byDate.has(date)) byDate.set(date, []);
+        byDate.get(date).push(schedule);
+      }
+
+      for (const [date, schedules] of byDate.entries()) {
+        if (filledDates.has(date)) continue;
+        result.push(...schedules);
+        filledDates.add(date);
+      }
+    }
+
+    return result.sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")) || String(a.start || "").localeCompare(String(b.start || "")));
   }
 
   async function probeMonth(index, year) {
@@ -212,6 +259,18 @@
     }
   }
 
+  async function loadAdjacentMonths(monthKey) {
+    if (!monthKey || !sessionId || !sessionPassword) return;
+    const year = String(rosterYear());
+    const candidates = [shiftMonthKey(monthKey, -1), shiftMonthKey(monthKey, 1)]
+      .filter((key) => key && key.startsWith(`${year}-`));
+
+    await Promise.all(candidates.map((key) => decryptMonth(key).catch(() => null)));
+    window.dispatchEvent(new CustomEvent("rooster-months-updated", {
+      detail: { supplementsReady: true, monthKey }
+    }));
+  }
+
   function selectedEmployeeName() {
     return document.querySelector("#rosterResult .employee-name")?.textContent?.trim()
       || document.getElementById("employeeName")?.value?.trim()
@@ -285,7 +344,7 @@
     const seen = new Set();
     return combined
       .filter((schedule) => {
-        const key = `${schedule.monthKey || ""}|${schedule.date || ""}|${schedule.start || ""}|${schedule.end || ""}`;
+        const key = `${schedule.date || ""}|${schedule.start || ""}|${schedule.end || ""}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -297,7 +356,9 @@
     const originalLoaded = originalGetRoster(monthKey);
     if (originalLoaded) {
       externalActiveMonth = "";
-      return originalSwitchMonth(monthKey);
+      const switched = originalSwitchMonth(monthKey);
+      loadAdjacentMonths(monthKey);
+      return switched;
     }
 
     const index = await decryptMonth(monthKey);
@@ -311,26 +372,34 @@
     window.dispatchEvent(new CustomEvent("rooster-month-changed", {
       detail: { monthKey, external: true }
     }));
+    loadAdjacentMonths(monthKey);
     return true;
   };
 
   agendaBridge.getCalendarData = function enhancedCalendarData() {
     const base = originalGetCalendarData() || {};
-    if (!externalActiveMonth) return base;
+    const state = bridge.getState() || {};
+    const monthKey = externalActiveMonth || base.monthKey || state.activeMonthKey || "";
+    if (!monthKey) return base;
 
-    const index = extraCache.get(externalActiveMonth) || originalGetRoster(externalActiveMonth);
-    if (!index) return { ...base, monthKey: externalActiveMonth, schedules: [] };
-
+    const index = extraCache.get(monthKey) || originalGetRoster(monthKey);
     const name = selectedEmployeeName() || base.name || "";
     const employee = getEmployee(index, name);
-    const periodLabel = index?.period?.label && index.period.label !== "unknown" ? index.period.label : "";
+    const primarySchedules = employee
+      ? mapSchedules(employee)
+      : (base.monthKey === monthKey && Array.isArray(base.schedules) ? base.schedules : []);
+    const schedules = mergeSchedulesForMonth(name, monthKey, primarySchedules);
+    const periodLabel = index?.period?.label && index.period.label !== "unknown"
+      ? index.period.label
+      : (base.periodLabel || "");
+
     return {
       ...base,
       name: employee?.name || name,
-      monthKey: externalActiveMonth,
+      monthKey,
       periodLabel,
       appointmentName: index?.display?.appointmentName || base.appointmentName || "Werkrooster",
-      schedules: employee ? mapSchedules(employee) : []
+      schedules
     };
   };
 
@@ -340,12 +409,16 @@
     sessionPassword = document.getElementById("rosterPassword")?.value || "";
   }, true);
 
-  window.addEventListener("rooster-unlocked", () => {
+  window.addEventListener("rooster-unlocked", (event) => {
     discoverMonths(true);
+    const monthKey = event.detail?.monthKey || originalGetState()?.activeMonthKey || "";
+    if (monthKey) loadAdjacentMonths(monthKey);
   });
 
-  window.addEventListener("rooster-employee-selected", () => {
+  window.addEventListener("rooster-employee-selected", (event) => {
     externalActiveMonth = "";
+    const monthKey = event.detail?.monthKey || originalGetState()?.activeMonthKey || "";
+    if (monthKey) loadAdjacentMonths(monthKey);
   });
 
   for (const key of originalGetState()?.availableMonths || []) knownMonths.add(key);
