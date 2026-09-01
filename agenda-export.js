@@ -231,3 +231,18 @@ trigger?.focus();
 });
 });
 })();
+
+(() => {
+  if (!document.querySelector('link[href="screenshot-export.css"]')) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "screenshot-export.css";
+    document.head.appendChild(link);
+  }
+  if (!document.querySelector('script[src="screenshot-export.js"]')) {
+    const script = document.createElement("script");
+    script.src = "screenshot-export.js";
+    script.defer = true;
+    document.body.appendChild(script);
+  }
+})();
