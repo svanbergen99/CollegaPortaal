@@ -6,35 +6,218 @@
   <title>Rooster bekijken</title>
   <style>
     * { box-sizing: border-box; }
-    :root { color-scheme: light; --ink:#172033; --muted:#64748b; --line:#dbe2ea; --surface:#fff; --page:#f3f5f8; --accent:#7b2f73; --accent-dark:#542450; --danger:#b42336; }
-    html,body{margin:0;min-height:100%} body{min-height:100vh;font-family:Arial,Helvetica,sans-serif;background:var(--page);color:var(--ink)} body.locked{overflow:hidden} [hidden]{display:none!important}
-    .overlay{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:20px;background:rgba(15,23,42,.82)}
-    .welcome-card{width:min(760px,100%);min-height:310px;display:flex;align-items:flex-end;justify-content:center;padding:28px;border-radius:26px;overflow:hidden;box-shadow:0 28px 80px rgba(0,0,0,.34);background:#fff url("KCD.jpg") center/contain no-repeat}
-    .welcome-content{width:min(390px,100%);padding:18px 22px 22px;text-align:center;border:1px solid rgba(255,255,255,.8);border-radius:18px;background:rgba(255,255,255,.88);backdrop-filter:blur(4px);box-shadow:0 12px 34px rgba(15,23,42,.18)}
-    .welcome-content h1,.unlock-card h1,.search-card h1{margin:0}.welcome-content h1{font-size:clamp(26px,4vw,34px)}
-    .unlock-card{width:min(430px,100%);padding:30px;border-radius:22px;background:var(--surface);box-shadow:0 28px 80px rgba(0,0,0,.34)}
-    .unlock-card p,.search-intro,.helper{color:var(--muted)} .unlock-card p{margin:9px 0 24px;line-height:1.45}
-    label{display:block;margin:15px 0 7px;font-weight:700} input{width:100%;padding:13px 14px;border:1px solid #c9d2dc;border-radius:12px;background:#fff;color:var(--ink);font:inherit;font-size:16px;outline:none} input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(123,47,115,.12)}
-    button{border:0;border-radius:12px;padding:13px 17px;background:var(--accent);color:#fff;font:inherit;font-weight:700;cursor:pointer} button:hover{background:var(--accent-dark)} button:disabled{opacity:.58;cursor:wait}.full-button{width:100%;margin-top:22px}
-    .error{min-height:20px;margin-top:12px;color:var(--danger);font-size:14px;font-weight:700}
-    #app{min-height:100vh;padding:52px 20px}.search-card{width:min(820px,100%);margin:0 auto;padding:32px;border-radius:22px;background:var(--surface);box-shadow:0 18px 52px rgba(15,23,42,.09)}
-    .search-intro{margin:9px 0 24px;line-height:1.5}.search-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}.search-row button{min-width:150px}.search-message{min-height:22px;margin-top:12px;color:var(--danger);font-weight:700;font-size:14px}
-    .roster-result{margin-top:28px;border-top:1px solid var(--line);padding-top:26px}.employee-head{display:flex;gap:16px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}.employee-name{margin:0;font-size:25px}.employee-team{color:var(--muted);font-weight:700}.period{margin:8px 0 0;color:var(--muted)}
-    .schedule-list{display:grid;gap:14px;margin-top:22px}.schedule-card{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fbfcfd}.schedule-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 17px;background:#fff;border-bottom:1px solid var(--line)}.schedule-date{font-weight:800}.schedule-time{color:var(--muted);font-weight:700;white-space:nowrap}.activities{display:grid;gap:8px;padding:13px 17px 16px}.activity{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:9px 10px;border-radius:10px;background:#fff}.activity-name{font-weight:700;overflow-wrap:anywhere}.activity-time{color:var(--muted);font-size:14px;white-space:nowrap}.no-activities{color:var(--muted);padding:4px 0}
-    @media(max-width:620px){.welcome-card{min-height:270px;padding:20px}.welcome-content{padding:16px 18px 19px}.unlock-card,.search-card{padding:23px}#app{padding:28px 12px}.search-row{grid-template-columns:1fr}.search-row button{width:100%}.schedule-head,.activity{align-items:flex-start;flex-direction:column}.activity{display:flex;gap:5px}}
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #64748b;
+      --line: #dbe2ea;
+      --surface: #ffffff;
+      --page: #f3f5f8;
+      --accent: #7b2f73;
+      --accent-dark: #542450;
+      --danger: #b42336;
+    }
+
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--page);
+      color: var(--ink);
+    }
+    body.locked { overflow: hidden; }
+    [hidden] { display: none !important; }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: rgba(15, 23, 42, .82);
+    }
+
+    .welcome-card {
+      width: min(760px, 100%);
+      min-height: 310px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 28px;
+      border-radius: 26px;
+      overflow: hidden;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, .34);
+      background-color: #fff;
+      background-image: url("KCD.jpg");
+      background-position: center;
+      background-size: contain;
+      background-repeat: no-repeat;
+    }
+
+    .welcome-content {
+      width: min(390px, 100%);
+      padding: 18px 22px 22px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, .8);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, .88);
+      backdrop-filter: blur(4px);
+      box-shadow: 0 12px 34px rgba(15, 23, 42, .18);
+    }
+
+    .welcome-content h1,
+    .unlock-card h1,
+    .search-card h1 { margin: 0; }
+
+    .welcome-content h1 { font-size: clamp(26px, 4vw, 34px); }
+
+    .unlock-card {
+      width: min(430px, 100%);
+      padding: 30px;
+      border-radius: 22px;
+      background: var(--surface);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, .34);
+    }
+
+    .unlock-card p,
+    .search-intro,
+    .helper { color: var(--muted); }
+    .unlock-card p { margin: 9px 0 24px; line-height: 1.45; }
+
+    label {
+      display: block;
+      margin: 15px 0 7px;
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #c9d2dc;
+      border-radius: 12px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      font-size: 16px;
+      outline: none;
+    }
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(123, 47, 115, .12);
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 13px 17px;
+      background: var(--accent);
+      color: #fff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:hover { background: var(--accent-dark); }
+    button:disabled { opacity: .58; cursor: wait; }
+    .full-button { width: 100%; margin-top: 22px; }
+
+    .error {
+      min-height: 20px;
+      margin-top: 12px;
+      color: var(--danger);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    #app {
+      min-height: 100vh;
+      padding: 52px 20px;
+    }
+
+    .search-card {
+      width: min(820px, 100%);
+      margin: 0 auto;
+      padding: 32px;
+      border-radius: 22px;
+      background: var(--surface);
+      box-shadow: 0 18px 52px rgba(15, 23, 42, .09);
+    }
+
+    .search-intro { margin: 9px 0 24px; line-height: 1.5; }
+    .search-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+    .name-field { position: relative; }
+    .suggestions { position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 6px); max-height: 280px; overflow-y: auto; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: #fff; box-shadow: 0 16px 38px rgba(15,23,42,.16); }
+    .suggestion { display: block; width: 100%; margin: 0; padding: 11px 12px; border-radius: 8px; background: transparent; color: var(--ink); text-align: left; font-weight: 700; }
+    .suggestion:hover, .suggestion.active { background: #f2eaf1; color: var(--accent-dark); }
+    .search-row button { min-width: 150px; }
+    .search-message { min-height: 22px; margin-top: 12px; color: var(--danger); font-weight: 700; font-size: 14px; }
+
+    .roster-result { margin-top: 28px; border-top: 1px solid var(--line); padding-top: 26px; }
+    .employee-head { display: flex; gap: 16px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+    .employee-name { margin: 0; font-size: 25px; }
+    .employee-team { color: var(--muted); font-weight: 700; }
+    .period { margin: 8px 0 0; color: var(--muted); }
+
+    .schedule-list { display: grid; gap: 14px; margin-top: 22px; }
+    .schedule-card { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: #fbfcfd; }
+    .schedule-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 15px 17px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+    .schedule-date { font-weight: 800; }
+    .schedule-time { color: var(--muted); font-weight: 700; white-space: nowrap; }
+    .activities { display: grid; gap: 8px; padding: 13px 17px 16px; }
+    .activity {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      padding: 9px 10px;
+      border-radius: 10px;
+      background: #fff;
+    }
+    .activity-name { font-weight: 700; overflow-wrap: anywhere; }
+    .activity-time { color: var(--muted); font-size: 14px; white-space: nowrap; }
+    .no-activities { color: var(--muted); padding: 4px 0; }
+
+    @media (max-width: 620px) {
+      .welcome-card { min-height: 270px; padding: 20px; }
+      .welcome-content { padding: 16px 18px 19px; }
+      .unlock-card, .search-card { padding: 23px; }
+      #app { padding: 28px 12px; }
+      .search-row { grid-template-columns: 1fr; }
+      .search-row button { width: 100%; }
+      .schedule-head, .activity { align-items: flex-start; flex-direction: column; }
+      .activity { display: flex; gap: 5px; }
+    }
   </style>
 </head>
 <body class="locked">
   <div id="welcomeOverlay" class="overlay" aria-modal="true" role="dialog" aria-labelledby="welcomeTitle">
-    <section class="welcome-card"><div class="welcome-content"><h1 id="welcomeTitle">Welkom Collega's</h1><button id="continueButton" class="full-button" type="button">Verder</button></div></section>
+    <section class="welcome-card">
+      <div class="welcome-content">
+        <h1 id="welcomeTitle">Welkom Collega's</h1>
+        <button id="continueButton" class="full-button" type="button">Verder</button>
+      </div>
+    </section>
   </div>
 
   <div id="unlockOverlay" class="overlay" aria-modal="true" role="dialog" aria-labelledby="unlockTitle" hidden>
     <form id="unlockForm" class="unlock-card" autocomplete="off">
       <h1 id="unlockTitle">Rooster ontgrendelen</h1>
       <p>Vul het ID en wachtwoord in waarmee het roosterbestand is beveiligd.</p>
-      <label for="rosterId">ID</label><input id="rosterId" name="rosterId" type="text" autocomplete="off" required>
-      <label for="rosterPassword">Wachtwoord</label><input id="rosterPassword" name="rosterPassword" type="password" autocomplete="new-password" required>
+
+      <label for="rosterId">ID</label>
+      <input id="rosterId" name="rosterId" type="text" autocomplete="off" required>
+
+      <label for="rosterPassword">Wachtwoord</label>
+      <input id="rosterPassword" name="rosterPassword" type="password" autocomplete="new-password" required>
+
       <button id="unlockButton" class="full-button" type="submit">Rooster ontgrendelen</button>
       <div id="unlockError" class="error" aria-live="polite"></div>
     </form>
@@ -44,33 +227,341 @@
     <section class="search-card">
       <h1>Rooster bekijken</h1>
       <p class="search-intro">Voer je volledige naam in. De volgorde van je voornaam en achternaam maakt niet uit.</p>
+
       <form id="nameForm" autocomplete="off">
         <label for="employeeName">Naam</label>
-        <div class="search-row"><input id="employeeName" name="employeeName" type="text" autocomplete="off" spellcheck="false" required><button type="submit">Rooster bekijken</button></div>
+        <div class="search-row">
+          <div class="name-field">
+            <input id="employeeName" name="employeeName" type="text" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="nameSuggestions" required>
+            <div id="nameSuggestions" class="suggestions" role="listbox" hidden></div>
+          </div>
+          <button type="submit">Rooster bekijken</button>
+        </div>
       </form>
       <div id="searchMessage" class="search-message" aria-live="polite"></div>
+
       <section id="rosterResult" class="roster-result" hidden></section>
     </section>
   </main>
 
   <script>
-    (()=>{"use strict";
-      const ROSTER_FILE="Roosterindex_September.json",decoder=new TextDecoder(),encoder=new TextEncoder();let rosterIndex=null,encryptedIndex=null;
-      const welcomeOverlay=document.getElementById("welcomeOverlay"),continueButton=document.getElementById("continueButton"),unlockOverlay=document.getElementById("unlockOverlay"),unlockForm=document.getElementById("unlockForm"),rosterId=document.getElementById("rosterId"),rosterPassword=document.getElementById("rosterPassword"),unlockButton=document.getElementById("unlockButton"),unlockError=document.getElementById("unlockError"),app=document.getElementById("app"),nameForm=document.getElementById("nameForm"),employeeName=document.getElementById("employeeName"),searchMessage=document.getElementById("searchMessage"),rosterResult=document.getElementById("rosterResult");
-      function base64ToBytes(value){const binary=atob(value),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i+=1)bytes[i]=binary.charCodeAt(i);return bytes}
-      async function loadEncryptedIndex(){if(encryptedIndex)return encryptedIndex;const response=await fetch(`${ROSTER_FILE}?v=${Date.now()}`,{cache:"no-store"});if(!response.ok)throw new Error("Het roosterbestand kon niet worden geladen.");const data=await response.json();if(data?.kind!=="roosterhulp-encrypted-index"||data?.encrypted!==true||!data.crypto||!data.payload)throw new Error("Het roosterbestand heeft niet het verwachte beveiligde formaat.");encryptedIndex=data;return data}
-      async function decryptIndex(id,password){if(!window.crypto?.subtle)throw new Error("Deze browser ondersteunt de vereiste versleuteling niet.");const secured=await loadEncryptedIndex(),c=secured.crypto,secret=encoder.encode(`${id}\u0000${password}`),material=await crypto.subtle.importKey("raw",secret,"PBKDF2",false,["deriveKey"]),key=await crypto.subtle.deriveKey({name:"PBKDF2",hash:c.hash||"SHA-256",salt:base64ToBytes(c.salt),iterations:Number(c.iterations)||250000},material,{name:"AES-GCM",length:Number(c.keyLength)||256},false,["decrypt"]),plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:base64ToBytes(c.iv)},key,base64ToBytes(secured.payload)),parsed=JSON.parse(decoder.decode(plain));if(parsed?.kind!=="roosterhulp-index"||!Array.isArray(parsed.employees))throw new Error("Het ontsleutelde roosterbestand is ongeldig.");return parsed}
-      function nameSignature(value){return String(value||"").toLocaleLowerCase("nl-NL").normalize("NFD").replace(/\p{M}/gu,"").replace(/[^\p{L}\p{N}]+/gu," ").trim().split(/\s+/).filter(Boolean).sort((a,b)=>a.localeCompare(b,"nl")).join("|")}
-      function formatDate(value){if(!value)return"Datum onbekend";const date=new Date(`${String(value).slice(0,10)}T12:00:00`);if(Number.isNaN(date.getTime()))return String(value);return new Intl.DateTimeFormat("nl-NL",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(date)}
-      function formatTime(value){if(!value)return"";const text=String(value),simple=text.match(/(?:T|^)(\d{2}):(\d{2})/);if(simple)return`${simple[1]}:${simple[2]}`;const plain=text.match(/^(\d{1,2}):(\d{2})$/);return plain?`${plain[1].padStart(2,"0")}:${plain[2]}`:text}
-      function timeRange(start,end){const a=formatTime(start),b=formatTime(end);return a&&b?`${a} – ${b}`:a||b||""}
-      function escapeHtml(value){return String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
-      function renderEmployee(employee){const schedules=Array.isArray(employee.schedules)?[...employee.schedules]:[];schedules.sort((a,b)=>String(a.date||"").localeCompare(String(b.date||""))||String(a.start||"").localeCompare(String(b.start||"")));const period=rosterIndex?.period?.label&&rosterIndex.period.label!=="unknown"?rosterIndex.period.label:"";const scheduleHtml=schedules.map(schedule=>{const activities=Array.isArray(schedule.activities)?schedule.activities:[],activityHtml=activities.length?activities.map(activity=>`<div class="activity"><span class="activity-name">${escapeHtml(activity.name||activity.type||"Activiteit")}</span><span class="activity-time">${escapeHtml(timeRange(activity.start,activity.end))}</span></div>`).join(""):'<div class="no-activities">Geen roosteronderdelen beschikbaar.</div>';return`<article class="schedule-card"><header class="schedule-head"><span class="schedule-date">${escapeHtml(formatDate(schedule.date))}</span><span class="schedule-time">${escapeHtml(timeRange(schedule.start,schedule.end))}</span></header><div class="activities">${activityHtml}</div></article>`}).join("");rosterResult.innerHTML=`<div class="employee-head"><h2 class="employee-name">${escapeHtml(employee.name)}</h2>${employee.team?`<span class="employee-team">${escapeHtml(employee.team)}</span>`:""}</div>${period?`<p class="period">Periode: ${escapeHtml(period)}</p>`:""}<div class="schedule-list">${scheduleHtml||'<div class="no-activities">Geen roosterregels gevonden.</div>'}</div>`;rosterResult.hidden=false}
-      document.addEventListener("keydown",event=>{if(event.key==="Escape"&&(!welcomeOverlay.hidden||!unlockOverlay.hidden))event.preventDefault()},true);
-      welcomeOverlay.addEventListener("click",event=>{if(event.target===welcomeOverlay)event.preventDefault()});unlockOverlay.addEventListener("click",event=>{if(event.target===unlockOverlay){event.preventDefault();(rosterId.value.trim()?rosterPassword:rosterId).focus()}});
-      continueButton.addEventListener("click",()=>{welcomeOverlay.hidden=true;unlockOverlay.hidden=false;unlockError.textContent="";requestAnimationFrame(()=>rosterId.focus());loadEncryptedIndex().catch(()=>{})});
-      unlockForm.addEventListener("submit",async event=>{event.preventDefault();const id=rosterId.value.trim(),password=rosterPassword.value;if(!id||!password)return;unlockButton.disabled=true;unlockButton.textContent="Ontgrendelen…";unlockError.textContent="";try{rosterIndex=await decryptIndex(id,password);rosterPassword.value="";rosterId.value="";unlockOverlay.hidden=true;app.hidden=false;document.body.classList.remove("locked");requestAnimationFrame(()=>employeeName.focus())}catch(error){rosterPassword.value="";rosterPassword.focus();unlockError.textContent=error?.message?.includes("geladen")||error?.message?.includes("formaat")||error?.message?.includes("browser")?error.message:"ID of wachtwoord is onjuist."}finally{unlockButton.disabled=false;unlockButton.textContent="Rooster ontgrendelen"}});
-      nameForm.addEventListener("submit",event=>{event.preventDefault();searchMessage.textContent="";rosterResult.hidden=true;rosterResult.innerHTML="";const signature=nameSignature(employeeName.value);if(!signature||!rosterIndex){searchMessage.textContent="Geen rooster gevonden voor deze naam.";return}const matches=rosterIndex.employees.filter(employee=>nameSignature(employee.name)===signature);if(matches.length!==1){searchMessage.textContent="Geen rooster gevonden voor deze naam.";return}renderEmployee(matches[0])});
+    (() => {
+      "use strict";
+
+      const ROSTER_FILE = "Roosterindex_September.json";
+      const decoder = new TextDecoder();
+      const encoder = new TextEncoder();
+      let rosterIndex = null;
+      let encryptedIndex = null;
+
+      const welcomeOverlay = document.getElementById("welcomeOverlay");
+      const continueButton = document.getElementById("continueButton");
+      const unlockOverlay = document.getElementById("unlockOverlay");
+      const unlockForm = document.getElementById("unlockForm");
+      const rosterId = document.getElementById("rosterId");
+      const rosterPassword = document.getElementById("rosterPassword");
+      const unlockButton = document.getElementById("unlockButton");
+      const unlockError = document.getElementById("unlockError");
+      const app = document.getElementById("app");
+      const nameForm = document.getElementById("nameForm");
+      const employeeName = document.getElementById("employeeName");
+      const searchMessage = document.getElementById("searchMessage");
+      const rosterResult = document.getElementById("rosterResult");
+      const nameSuggestions = document.getElementById("nameSuggestions");
+      let suggestionMatches = [];
+      let activeSuggestion = -1;
+
+      function base64ToBytes(value) {
+        const binary = atob(value);
+        const bytes = new Uint8Array(binary.length);
+        for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+        return bytes;
+      }
+
+      async function loadEncryptedIndex() {
+        if (encryptedIndex) return encryptedIndex;
+        const response = await fetch(`${ROSTER_FILE}?v=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) throw new Error("Het roosterbestand kon niet worden geladen.");
+        const data = await response.json();
+        if (data?.kind !== "roosterhulp-encrypted-index" || data?.encrypted !== true || !data.crypto || !data.payload) {
+          throw new Error("Het roosterbestand heeft niet het verwachte beveiligde formaat.");
+        }
+        encryptedIndex = data;
+        return data;
+      }
+
+      async function decryptIndex(id, password) {
+        if (!window.crypto?.subtle) throw new Error("Deze browser ondersteunt de vereiste versleuteling niet.");
+        const secured = await loadEncryptedIndex();
+        const cryptoInfo = secured.crypto;
+        const secret = encoder.encode(`${id}\u0000${password}`);
+        const keyMaterial = await crypto.subtle.importKey("raw", secret, "PBKDF2", false, ["deriveKey"]);
+        const key = await crypto.subtle.deriveKey(
+          {
+            name: "PBKDF2",
+            hash: cryptoInfo.hash || "SHA-256",
+            salt: base64ToBytes(cryptoInfo.salt),
+            iterations: Number(cryptoInfo.iterations) || 250000
+          },
+          keyMaterial,
+          { name: "AES-GCM", length: Number(cryptoInfo.keyLength) || 256 },
+          false,
+          ["decrypt"]
+        );
+        const plaintext = await crypto.subtle.decrypt(
+          { name: "AES-GCM", iv: base64ToBytes(cryptoInfo.iv) },
+          key,
+          base64ToBytes(secured.payload)
+        );
+        const parsed = JSON.parse(decoder.decode(plaintext));
+        if (parsed?.kind !== "roosterhulp-index" || !Array.isArray(parsed.employees)) {
+          throw new Error("Het ontsleutelde roosterbestand is ongeldig.");
+        }
+        return parsed;
+      }
+
+      function nameSignature(value) {
+        const tokens = String(value || "")
+          .toLocaleLowerCase("nl-NL")
+          .normalize("NFD")
+          .replace(/\p{M}/gu, "")
+          .replace(/[^\p{L}\p{N}]+/gu, " ")
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b, "nl"));
+        return tokens.join("|");
+      }
+
+      function normalizeSearchText(value) {
+        return String(value || "")
+          .toLocaleLowerCase("nl-NL")
+          .normalize("NFD")
+          .replace(/\p{M}/gu, "")
+          .replace(/[^\p{L}\p{N}]+/gu, " ")
+          .trim()
+          .replace(/\s+/g, " ");
+      }
+
+      function hideSuggestions() {
+        suggestionMatches = [];
+        activeSuggestion = -1;
+        nameSuggestions.hidden = true;
+        nameSuggestions.innerHTML = "";
+        employeeName.setAttribute("aria-expanded", "false");
+        employeeName.removeAttribute("aria-activedescendant");
+      }
+
+      function selectSuggestion(index) {
+        const employee = suggestionMatches[index];
+        if (!employee) return;
+        employeeName.value = employee.name;
+        hideSuggestions();
+        employeeName.focus();
+      }
+
+      function renderSuggestions() {
+        if (!rosterIndex) return hideSuggestions();
+        const query = normalizeSearchText(employeeName.value);
+        if (!query) return hideSuggestions();
+        const parts = query.split(" ").filter(Boolean);
+        suggestionMatches = rosterIndex.employees
+          .filter((employee) => {
+            const candidate = normalizeSearchText(employee.name);
+            return parts.every((part) => candidate.includes(part));
+          })
+          .sort((a, b) => String(a.name).localeCompare(String(b.name), "nl-NL"))
+          .slice(0, 8);
+        activeSuggestion = -1;
+        if (!suggestionMatches.length) return hideSuggestions();
+        nameSuggestions.innerHTML = suggestionMatches.map((employee, index) =>
+          `<button class="suggestion" id="nameSuggestion-${index}" role="option" type="button" data-index="${index}">${escapeHtml(employee.name)}</button>`
+        ).join("");
+        nameSuggestions.hidden = false;
+        employeeName.setAttribute("aria-expanded", "true");
+      }
+
+      function formatDate(value) {
+        if (!value) return "Datum onbekend";
+        const date = new Date(`${String(value).slice(0, 10)}T12:00:00`);
+        if (Number.isNaN(date.getTime())) return String(value);
+        return new Intl.DateTimeFormat("nl-NL", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric"
+        }).format(date);
+      }
+
+      function formatTime(value) {
+        if (!value) return "";
+        const text = String(value);
+        const simple = text.match(/(?:T|^)(\d{2}):(\d{2})/);
+        if (simple) return `${simple[1]}:${simple[2]}`;
+        const plain = text.match(/^(\d{1,2}):(\d{2})$/);
+        if (plain) return `${plain[1].padStart(2, "0")}:${plain[2]}`;
+        return text;
+      }
+
+      function timeRange(start, end) {
+        const from = formatTime(start);
+        const to = formatTime(end);
+        if (from && to) return `${from} – ${to}`;
+        return from || to || "";
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function renderEmployee(employee) {
+        const schedules = Array.isArray(employee.schedules) ? [...employee.schedules] : [];
+        schedules.sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")) || String(a.start || "").localeCompare(String(b.start || "")));
+        const periodLabel = rosterIndex?.period?.label && rosterIndex.period.label !== "unknown" ? rosterIndex.period.label : "";
+
+        const scheduleHtml = schedules.map((schedule) => {
+          const activities = Array.isArray(schedule.activities) ? schedule.activities : [];
+          const activityHtml = activities.length
+            ? activities.map((activity) => `
+                <div class="activity">
+                  <span class="activity-name">${escapeHtml(activity.name || activity.type || "Activiteit")}</span>
+                  <span class="activity-time">${escapeHtml(timeRange(activity.start, activity.end))}</span>
+                </div>`).join("")
+            : '<div class="no-activities">Geen roosteronderdelen beschikbaar.</div>';
+
+          return `
+            <article class="schedule-card">
+              <header class="schedule-head">
+                <span class="schedule-date">${escapeHtml(formatDate(schedule.date))}</span>
+                <span class="schedule-time">${escapeHtml(timeRange(schedule.start, schedule.end))}</span>
+              </header>
+              <div class="activities">${activityHtml}</div>
+            </article>`;
+        }).join("");
+
+        rosterResult.innerHTML = `
+          <div class="employee-head">
+            <h2 class="employee-name">${escapeHtml(employee.name)}</h2>
+            ${employee.team ? `<span class="employee-team">${escapeHtml(employee.team)}</span>` : ""}
+          </div>
+          ${periodLabel ? `<p class="period">Periode: ${escapeHtml(periodLabel)}</p>` : ""}
+          <div class="schedule-list">${scheduleHtml || '<div class="no-activities">Geen roosterregels gevonden.</div>'}</div>`;
+        rosterResult.hidden = false;
+      }
+
+      function keepModalLocked(event) {
+        if (event.key === "Escape" && (!welcomeOverlay.hidden || !unlockOverlay.hidden)) event.preventDefault();
+      }
+
+      continueButton.addEventListener("click", () => {
+        welcomeOverlay.hidden = true;
+        unlockOverlay.hidden = false;
+        unlockError.textContent = "";
+        requestAnimationFrame(() => rosterId.focus());
+        loadEncryptedIndex().catch(() => {});
+      });
+
+      welcomeOverlay.addEventListener("click", (event) => {
+        if (event.target === welcomeOverlay) event.preventDefault();
+      });
+      unlockOverlay.addEventListener("click", (event) => {
+        if (event.target === unlockOverlay) {
+          event.preventDefault();
+          (rosterId.value.trim() ? rosterPassword : rosterId).focus();
+        }
+      });
+      document.addEventListener("keydown", keepModalLocked, true);
+
+      unlockForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const id = rosterId.value.trim();
+        const password = rosterPassword.value;
+        if (!id || !password) return;
+
+        unlockButton.disabled = true;
+        unlockButton.textContent = "Ontgrendelen…";
+        unlockError.textContent = "";
+
+        try {
+          rosterIndex = await decryptIndex(id, password);
+          rosterPassword.value = "";
+          rosterId.value = "";
+          unlockOverlay.hidden = true;
+          app.hidden = false;
+          document.body.classList.remove("locked");
+          requestAnimationFrame(() => employeeName.focus());
+        } catch (error) {
+          rosterPassword.value = "";
+          rosterPassword.focus();
+          if (error?.message?.includes("geladen") || error?.message?.includes("formaat") || error?.message?.includes("browser")) {
+            unlockError.textContent = error.message;
+          } else {
+            unlockError.textContent = "ID of wachtwoord is onjuist.";
+          }
+        } finally {
+          unlockButton.disabled = false;
+          unlockButton.textContent = "Rooster ontgrendelen";
+        }
+      });
+
+      employeeName.addEventListener("input", () => {
+        searchMessage.textContent = "";
+        renderSuggestions();
+      });
+
+      employeeName.addEventListener("keydown", (event) => {
+        if (nameSuggestions.hidden || !suggestionMatches.length) return;
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+          event.preventDefault();
+          const direction = event.key === "ArrowDown" ? 1 : -1;
+          activeSuggestion = (activeSuggestion + direction + suggestionMatches.length) % suggestionMatches.length;
+          [...nameSuggestions.querySelectorAll(".suggestion")].forEach((button, index) => button.classList.toggle("active", index === activeSuggestion));
+          employeeName.setAttribute("aria-activedescendant", `nameSuggestion-${activeSuggestion}`);
+        } else if (event.key === "Enter" && activeSuggestion >= 0) {
+          event.preventDefault();
+          selectSuggestion(activeSuggestion);
+        } else if (event.key === "Escape") {
+          hideSuggestions();
+        }
+      });
+
+      nameSuggestions.addEventListener("mousedown", (event) => {
+        const button = event.target.closest(".suggestion");
+        if (!button) return;
+        event.preventDefault();
+        selectSuggestion(Number(button.dataset.index));
+      });
+
+      document.addEventListener("click", (event) => {
+        if (!event.target.closest(".name-field")) hideSuggestions();
+      });
+
+      nameForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        searchMessage.textContent = "";
+        hideSuggestions();
+        rosterResult.hidden = true;
+        rosterResult.innerHTML = "";
+
+        const signature = nameSignature(employeeName.value);
+        if (!signature || !rosterIndex) {
+          searchMessage.textContent = "Geen rooster gevonden voor deze naam.";
+          return;
+        }
+
+        const matches = rosterIndex.employees.filter((employee) => nameSignature(employee.name) === signature);
+        if (matches.length !== 1) {
+          searchMessage.textContent = "Geen rooster gevonden voor deze naam.";
+          return;
+        }
+
+        renderEmployee(matches[0]);
+      });
     })();
   </script>
 </body>
