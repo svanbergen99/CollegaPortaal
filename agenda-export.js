@@ -105,11 +105,12 @@ link.remove();
 setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
 const providers = {
-samsung: { title: "Samsung Agenda", steps: ["Open het gedownloade .ics-bestand vanuit Downloads of Mijn bestanden.","Kies Samsung Agenda als die als app wordt aangeboden en bevestig de import.","Wordt Samsung Agenda niet aangeboden? Importeer het bestand in het Google- of Outlook-account dat met Samsung Agenda synchroniseert. De werkdagen verschijnen daarna via die accountkoppeling in Samsung Agenda."] },
+samsung: { title: "Samsung Agenda", steps: ["Open het gedownloade .ics-bestand vanuit Downloads of Mijn bestanden.","Kies Samsung Agenda als die als app wordt aangeboden en bevestig de import.","Wordt Samsung Agenda niet aangeboden? Importeer het bestand in het Google- of Microsoft-account dat met Samsung Agenda synchroniseert."] },
 google: { title: "Google Agenda", steps: ["Open Google Agenda op een computer en ga naar Instellingen.","Kies links Importeren en exporteren en daarna Bestand selecteren op je computer.","Selecteer het opgeslagen .ics-bestand, kies de gewenste agenda en klik op Importeren."] },
 apple: { title: "Apple Agenda", steps: ["Open het .ics-bestand. Als Apple Agenda het bestand direct herkent, kies je de agenda waarin je de werkdagen wilt zetten en bevestig je de import.","Op een Mac kan dit ook via Agenda > Archief > Importeer en vervolgens het opgeslagen .ics-bestand selecteren.","Als je iCloud Agenda gebruikt, worden de geïmporteerde afspraken daarna met je andere Apple-apparaten gesynchroniseerd."] },
-outlook: { title: "Outlook Agenda", steps: ["Open Outlook Agenda en kies Agenda toevoegen.","Kies Uploaden uit bestand en selecteer het opgeslagen .ics-bestand.","Kies in welke Outlook-agenda de werkdagen moeten komen en klik op Importeren. In klassieke Outlook kun je het .ics-bestand ook rechtstreeks openen of via Importeren/Exporteren importeren."] },
-teams: { title: "Microsoft Teams Agenda", steps: ["Gebruik voor de import Outlook met hetzelfde Microsoft 365 werk- of schoolaccount dat je in Teams gebruikt.","Ga in Outlook Agenda naar Agenda toevoegen > Uploaden uit bestand en selecteer het .ics-bestand.","Importeer het bestand in de agenda van dat account. De afspraken worden vervolgens ook in de Teams-agenda zichtbaar."] }
+microsoft: { title: "Outlook / Teams Agenda", steps: ["Gebruik Outlook Agenda met hetzelfde Microsoft 365 werk- of schoolaccount dat je in Teams gebruikt.","Kies in Outlook Agenda voor Agenda toevoegen > Uploaden uit bestand en selecteer het opgeslagen .ics-bestand.","Importeer de werkdagen in de agenda van dat account. Als Teams dezelfde Microsoft 365-agenda gebruikt, worden de afspraken daar vervolgens ook zichtbaar."] },
+proton: { title: "Proton Calendar", steps: ["Op Android kun je het opgeslagen .ics-bestand openen en Proton Calendar kiezen om de afspraken te importeren.","Op een computer kun je Proton Calendar openen en naar Instellingen > Alle instellingen > Importeren/exporteren gaan.","Kies Importeren vanuit ICS, selecteer het roosterbestand en kies de Proton-agenda waarin je de werkdagen wilt plaatsen."] },
+other: { title: "Andere agenda", steps: ["Open het opgeslagen .ics-bestand op je apparaat.","Kies je agenda-app als deze wordt aangeboden en bevestig het toevoegen of importeren van de afspraken.","Wordt je agenda-app niet aangeboden? Zoek in de instellingen van die app naar Importeren, ICS of Agenda importeren en selecteer daar het opgeslagen bestand."] }
 };
 function ensureHelpOverlay() {
 if (helpOverlay) return helpOverlay;
@@ -132,7 +133,7 @@ document.body.classList.remove("agenda-help-open");
 }
 function showHelp(provider, exportData, mode) {
 const overlay = ensureHelpOverlay();
-const info = providers[provider] || providers.outlook;
+const info = providers[provider] || providers.other;
 const downloadButton = overlay.querySelector("[data-help-download]");
 downloadButton.hidden = !exportData.count;
 overlay.querySelector("[data-help-title]").textContent = `${info.title}: rooster plaatsen`;
@@ -164,7 +165,7 @@ const exportData = buildIcs(data);
 lastCalendarExport = exportData;
 if (!exportData.count) return showEmpty(exportData);
 const file = new File([exportData.content], exportData.filename, { type: "text/calendar;charset=utf-8" });
-const canShare = ["apple", "samsung", "outlook"].includes(provider) && typeof navigator.share === "function" && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] });
+const canShare = ["apple", "samsung", "microsoft", "proton", "other"].includes(provider) && typeof navigator.share === "function" && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] });
 if (canShare) {
 try {
 await navigator.share({ files: [file], title: `Werkrooster ${data.name}` });
@@ -191,7 +192,7 @@ scheduleList.before(tools);
 const available = exportSchedules(data).some((schedule) => eventTiming(schedule));
 const wrap = document.createElement("div");
 wrap.className = "agenda-export";
-wrap.innerHTML = `<button class="agenda-trigger" type="button" aria-haspopup="menu" aria-expanded="false" ${available ? "" : "disabled"}>In Agenda plaatsen <span class="chevron" aria-hidden="true">▼</span></button><div class="agenda-menu" role="menu" hidden><button type="button" role="menuitem" data-agenda="samsung">Samsung Agenda</button><button type="button" role="menuitem" data-agenda="google">Google Agenda</button><button type="button" role="menuitem" data-agenda="apple">Apple Agenda</button><button type="button" role="menuitem" data-agenda="outlook">Outlook Agenda</button><button type="button" role="menuitem" data-agenda="teams">Team Agenda</button></div>`;
+wrap.innerHTML = `<button class="agenda-trigger" type="button" aria-haspopup="menu" aria-expanded="false" ${available ? "" : "disabled"}>In Agenda plaatsen <span class="chevron" aria-hidden="true">▼</span></button><div class="agenda-menu" role="menu" hidden><button type="button" role="menuitem" data-agenda="samsung">Samsung Agenda</button><button type="button" role="menuitem" data-agenda="google">Google Agenda</button><button type="button" role="menuitem" data-agenda="apple">Apple Agenda</button><button type="button" role="menuitem" data-agenda="microsoft">Outlook / Teams Agenda</button><button type="button" role="menuitem" data-agenda="proton">Proton Calendar</button><button type="button" role="menuitem" data-agenda="other">Andere agenda</button></div>`;
 tools.prepend(wrap);
 const trigger = wrap.querySelector(".agenda-trigger");
 const menu = wrap.querySelector(".agenda-menu");
