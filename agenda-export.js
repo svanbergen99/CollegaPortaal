@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "20260901-3";
+  const VERSION = "20260902-2";
 
   function hasAsset(selector, baseName, attribute) {
     return [...document.querySelectorAll(selector)].some((element) => {
@@ -28,10 +28,18 @@
 
   loadStyle("theme.css");
   loadStyle("background-contrast.css");
+  loadStyle("roster-extras.css");
   loadStyle("personal-month.css");
+  loadStyle("session-timeout.css");
+
+  loadScript("roster-controller.js");
+  loadScript("timezone-background.js");
   loadScript("theme.js");
   loadScript("agenda-export-core.js");
+  loadScript("agenda-timezone.js");
+  loadScript("workers-view.js");
   loadScript("today-workers-close.js");
   loadScript("screenshot-theme.js");
   loadScript("personal-month.js");
+  loadScript("session-timeout.js");
 })();
