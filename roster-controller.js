@@ -6,7 +6,7 @@
   const REPO = "svanbergen99/Rooster";
   const CORE_FILE_RE = /Roosterindex_September\.json(?:[?#]|$)/i;
   const SKIP_WELCOME_KEY = "rooster-skip-welcome-once";
-  const nativeFetch = window.fetch.bind(window);
+  const nativeFetch = window.__roosterNativeFetch || window.fetch.bind(window);
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   const rosterCache = new Map();
@@ -158,13 +158,13 @@
     if (!id || !password || !window.crypto?.subtle) return;
     const center = coreMonthKey || currentMonthKey();
     const year = Number(center.slice(0, 4));
-    const keys = Array.from({ length: 12 }, (_, index) => `${year}-${String(index + 1).padStart(2, "0")}`);
-    const previous = shiftMonthKey(center, -1);
-    const next = shiftMonthKey(center, 1);
-    if (!keys.includes(previous)) keys.push(previous);
-    if (!keys.includes(next)) keys.push(next);
-    for (const key of keys) await loadAndDecrypt(key, id, password);
-    window.dispatchEvent(new CustomEvent("rooster-months-updated"));
+    const preferred = [center, shiftMonthKey(center, -1), shiftMonthKey(center, 1)];
+    const rest = Array.from({ length: 12 }, (_, index) => `${year}-${String(index + 1).padStart(2, "0")}`);
+    const keys = [...new Set([...preferred, ...rest])];
+    for (const key of keys) {
+      const loaded = await loadAndDecrypt(key, id, password);
+      if (loaded) window.dispatchEvent(new CustomEvent("rooster-months-updated", { detail: { monthKey: key } }));
+    }
   }
 
   function getEmployee(index, name) {
