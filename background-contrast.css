@@ -1,0 +1,14 @@
+/* De seizoens- en feestdagachtergrond blijft in beide modi rustig en donker. */
+body {
+  background-color: #0d121a !important;
+  background-image:
+    linear-gradient(rgba(8, 12, 18, .82), rgba(8, 12, 18, .82)),
+    var(--page-background-image, none) !important;
+}
+
+html[data-theme="dark"] body {
+  background-color: #0d121a !important;
+  background-image:
+    linear-gradient(rgba(8, 12, 18, .84), rgba(8, 12, 18, .84)),
+    var(--page-background-image, none) !important;
+}
