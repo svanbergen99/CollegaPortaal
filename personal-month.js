@@ -8,6 +8,8 @@
 
   const weekdays = ["ma", "di", "wo", "do", "vr", "za", "zo"];
   const monthNames = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
+  const fullRosterCache = new Map();
+  let captureEmployee = "";
   let resizeTimer = null;
   let renderTimer = null;
 
@@ -46,20 +48,54 @@
     return /^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(color) ? color : "#dbe2ea";
   }
 
-  function dominantMonth(schedules) {
+  function sortedSchedules(data) {
+    const schedules = Array.isArray(data?.schedules) ? [...data.schedules] : [];
+    schedules.sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")) || String(a.start || "").localeCompare(String(b.start || "")));
+    return schedules;
+  }
+
+  function extractActivities(card) {
+    return [...card.querySelectorAll(".activity")].map((activity) => ({
+      name: activity.querySelector(".activity-name")?.textContent?.trim() || "Activiteit",
+      time: activity.querySelector(".activity-time")?.textContent?.trim() || "",
+      color: safeColor(activity.style.getPropertyValue("--activity-color"))
+    }));
+  }
+
+  function extractVisibleEntries(data) {
+    const allSchedules = sortedSchedules(data);
+    const today = localDateKey();
+    const visibleSchedules = data.showFullRoster
+      ? allSchedules
+      : allSchedules.filter((schedule) => String(schedule.date || "").slice(0, 10) >= today);
+    const cards = [...rosterResult.querySelectorAll(".schedule-list > .schedule-card")];
+    const entries = [];
+
+    visibleSchedules.forEach((schedule, index) => {
+      const card = cards[index];
+      entries.push({
+        date: String(schedule?.date || "").slice(0, 10),
+        start: schedule?.start,
+        end: schedule?.end,
+        shiftTime: card?.querySelector(".schedule-time")?.textContent?.trim() || timeRange(schedule?.start, schedule?.end),
+        activities: card ? extractActivities(card) : []
+      });
+    });
+    return entries;
+  }
+
+  function dominantMonth(entries) {
     const counts = new Map();
-    for (const schedule of schedules) {
-      const key = String(schedule?.date || "").slice(0, 7);
+    for (const entry of entries) {
+      const key = String(entry?.date || "").slice(0, 7);
       if (/^\d{4}-\d{2}$/.test(key)) counts.set(key, (counts.get(key) || 0) + 1);
     }
     const winner = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0];
     return winner || localDateKey().slice(0, 7);
   }
 
-  function monthModel(data) {
-    const schedules = Array.isArray(data?.schedules) ? [...data.schedules] : [];
-    schedules.sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")) || String(a.start || "").localeCompare(String(b.start || "")));
-    const monthKey = dominantMonth(schedules);
+  function monthModel(entries) {
+    const monthKey = dominantMonth(entries);
     const [yearText, monthText] = monthKey.split("-");
     const year = Number(yearText);
     const monthIndex = Number(monthText) - 1;
@@ -68,30 +104,28 @@
     const totalCells = mondayOffset + daysInMonth <= 35 ? 35 : 42;
     const byDate = new Map();
 
-    for (const schedule of schedules) {
-      const date = String(schedule?.date || "").slice(0, 10);
+    for (const entry of entries) {
+      const date = String(entry?.date || "").slice(0, 10);
       if (!date.startsWith(`${monthKey}-`)) continue;
       if (!byDate.has(date)) byDate.set(date, []);
-      byDate.get(date).push(schedule);
+      byDate.get(date).push(entry);
     }
 
     return { monthKey, year, monthIndex, daysInMonth, mondayOffset, totalCells, byDate };
   }
 
   function activityHtml(activity) {
-    const name = activity?.name || activity?.type || "Activiteit";
-    const range = timeRange(activity?.start, activity?.end);
-    return `<div class="personal-month-activity" style="--activity-color:${safeColor(activity?.color)}"><span class="personal-month-activity-name">${escapeHtml(name)}</span>${range ? `<span class="personal-month-activity-time">${escapeHtml(range)}</span>` : ""}</div>`;
+    return `<div class="personal-month-activity" style="--activity-color:${safeColor(activity?.color)}"><span class="personal-month-activity-name">${escapeHtml(activity?.name || "Activiteit")}</span>${activity?.time ? `<span class="personal-month-activity-time">${escapeHtml(activity.time)}</span>` : ""}</div>`;
   }
 
-  function scheduleHtml(schedule) {
-    const range = timeRange(schedule?.start, schedule?.end);
-    const activities = Array.isArray(schedule?.activities) ? schedule.activities : [];
+  function scheduleHtml(entry) {
+    const range = entry?.shiftTime || timeRange(entry?.start, entry?.end);
+    const activities = Array.isArray(entry?.activities) ? entry.activities : [];
     return `<div class="personal-month-shift">${range ? `<div class="personal-month-shift-time">${escapeHtml(range)}</div>` : ""}<div class="personal-month-activities">${activities.length ? activities.map(activityHtml).join("") : '<div class="personal-month-no-activities">Geen roosteronderdelen beschikbaar.</div>'}</div></div>`;
   }
 
-  function buildMonthHtml(data) {
-    const model = monthModel(data);
+  function buildMonthHtml(entries) {
+    const model = monthModel(entries);
     const today = localDateKey();
     const cells = [];
 
@@ -131,6 +165,17 @@
     });
   }
 
+  function showMonth(entries) {
+    const scheduleList = rosterResult.querySelector(".schedule-list");
+    if (!scheduleList) return;
+    scheduleList.hidden = true;
+    scheduleList.insertAdjacentHTML("afterend", buildMonthHtml(entries));
+    const oldToggle = rosterResult.querySelector('[data-action="toggle-full-roster"]');
+    if (oldToggle) oldToggle.hidden = true;
+    searchCard.classList.add("has-month-roster");
+    equalizeDayHeights();
+  }
+
   function renderMonthView() {
     clearTimeout(renderTimer);
     renderTimer = setTimeout(() => {
@@ -140,24 +185,38 @@
         return;
       }
 
-      const data = bridge.getCalendarData();
-      if (!data?.name || !Array.isArray(data.schedules)) return;
-      const existing = rosterResult.querySelector(".personal-month-view");
-      if (existing) {
+      if (rosterResult.querySelector(".personal-month-view")) {
         searchCard.classList.add("has-month-roster");
         equalizeDayHeights();
         return;
       }
 
-      const scheduleList = rosterResult.querySelector(".schedule-list");
-      if (!scheduleList) return;
+      const data = bridge.getCalendarData();
+      if (!data?.name || !Array.isArray(data.schedules)) return;
+      const cacheKey = data.name;
+      const toggle = rosterResult.querySelector('[data-action="toggle-full-roster"]');
 
-      scheduleList.hidden = true;
-      scheduleList.insertAdjacentHTML("afterend", buildMonthHtml(data));
-      const oldToggle = rosterResult.querySelector('[data-action="toggle-full-roster"]');
-      if (oldToggle) oldToggle.hidden = true;
-      searchCard.classList.add("has-month-roster");
-      equalizeDayHeights();
+      if (captureEmployee === cacheKey && data.showFullRoster) {
+        fullRosterCache.set(cacheKey, extractVisibleEntries(data));
+        captureEmployee = "";
+        if (toggle && /vanaf vandaag/i.test(toggle.textContent || "")) {
+          toggle.click();
+          return;
+        }
+      }
+
+      if (!data.showFullRoster && toggle && /volledig rooster/i.test(toggle.textContent || "") && !fullRosterCache.has(cacheKey)) {
+        captureEmployee = cacheKey;
+        toggle.click();
+        return;
+      }
+
+      let entries = fullRosterCache.get(cacheKey);
+      if (!entries || !entries.length) {
+        entries = extractVisibleEntries(data);
+        if (data.showFullRoster || !toggle) fullRosterCache.set(cacheKey, entries);
+      }
+      showMonth(entries);
     }, 0);
   }
 
