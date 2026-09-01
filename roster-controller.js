@@ -17,7 +17,7 @@
   let capturedId = "";
   let capturedPassword = "";
   let preloadPromise = null;
-  let internalRosterMutation = false;
+  let lastEmployeeSignature = "";
 
   const app = document.getElementById("app");
   const unlockForm = document.getElementById("unlockForm");
@@ -349,13 +349,20 @@
 
   if (rosterResult) {
     const rosterObserver = new MutationObserver(() => {
-      if (internalRosterMutation) return;
       const employeeHeader = rosterResult.querySelector(".employee-head");
-      if (employeeHeader) {
-        activeMonthKey = coreMonthKey || currentMonthKey();
-        updateStamp(activeMonthKey);
-        window.dispatchEvent(new CustomEvent("rooster-employee-selected", { detail: { monthKey: activeMonthKey } }));
+      if (!employeeHeader) {
+        lastEmployeeSignature = "";
+        return;
       }
+
+      const employee = employeeHeader.querySelector(".employee-name")?.textContent?.trim() || employeeName?.value?.trim() || "";
+      const signature = nameSignature(employee);
+      if (!signature || signature === lastEmployeeSignature) return;
+
+      lastEmployeeSignature = signature;
+      activeMonthKey = coreMonthKey || currentMonthKey();
+      updateStamp(activeMonthKey);
+      window.dispatchEvent(new CustomEvent("rooster-employee-selected", { detail: { monthKey: activeMonthKey } }));
     });
     rosterObserver.observe(rosterResult, { childList: true, subtree: false });
   }
