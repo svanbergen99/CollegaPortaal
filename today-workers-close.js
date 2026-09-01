@@ -3,42 +3,45 @@
 
   const rosterResult = document.getElementById("rosterResult");
   const searchCard = document.querySelector(".search-card");
-  const whoWorksTodayButton = document.getElementById("whoWorksTodayButton");
-  const action = whoWorksTodayButton?.closest(".today-workers-action");
-  if (!rosterResult || !searchCard || !whoWorksTodayButton || !action) return;
+  const action = document.querySelector(".today-workers-action");
+  const todayButton = document.getElementById("whoWorksTodayButton");
+  const nowButton = document.getElementById("whoWorksNowButton");
+  if (!rosterResult || !searchCard || !action || !todayButton || !nowButton) return;
 
-  function closeTodayWorkers() {
+  const groupButtons = [todayButton, nowButton];
+
+  function closeGroupView() {
     rosterResult.hidden = true;
     rosterResult.innerHTML = "";
-    searchCard.classList.remove("has-roster");
-    whoWorksTodayButton.focus();
+    searchCard.classList.remove("has-roster", "has-month-roster");
     sync();
   }
 
   function sync() {
-    const visible = !rosterResult.hidden && Boolean(rosterResult.querySelector(".today-workers-head"));
-    let button = action.querySelector(".today-workers-close-action");
+    const header = rosterResult.querySelector(".today-workers-head");
+    const title = header?.querySelector("h2")?.textContent?.trim() || "";
+    const activeButton = title === "Wie werkt nu" ? nowButton : title === "Wie werkt vandaag" ? todayButton : null;
+    let closeButton = action.querySelector(".today-workers-close-action");
 
-    if (visible) {
-      action.style.gap = "8px";
-      whoWorksTodayButton.style.width = "auto";
-      whoWorksTodayButton.style.flex = "1 1 auto";
-      if (!button) {
-        button = document.createElement("button");
-        button.type = "button";
-        button.className = "today-workers-close-action";
-        button.textContent = "Oké";
-        button.style.minHeight = "42px";
-        button.style.padding = "10px 16px";
-        button.style.flex = "0 0 auto";
-        button.addEventListener("click", closeTodayWorkers);
-        action.appendChild(button);
+    if (activeButton && !rosterResult.hidden) {
+      groupButtons.forEach((button) => {
+        button.hidden = button !== activeButton;
+        button.style.flex = button === activeButton ? "1 1 auto" : "";
+      });
+      if (!closeButton) {
+        closeButton = document.createElement("button");
+        closeButton.type = "button";
+        closeButton.className = "today-workers-close-action";
+        closeButton.textContent = "Oké";
+        closeButton.addEventListener("click", closeGroupView);
+        action.appendChild(closeButton);
       }
     } else {
-      button?.remove();
-      action.style.gap = "";
-      whoWorksTodayButton.style.width = "";
-      whoWorksTodayButton.style.flex = "";
+      closeButton?.remove();
+      groupButtons.forEach((button) => {
+        button.hidden = false;
+        button.style.flex = "";
+      });
     }
   }
 
