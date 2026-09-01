@@ -271,6 +271,7 @@ background: var(--activity-color, #dbe2ea);
 .activity-time { justify-self: start; }
 }
 </style>
+<link rel="stylesheet" href="agenda-export.css">
 </head>
 <body class="locked">
 <div id="welcomeOverlay" class="overlay" aria-modal="true" role="dialog" aria-labelledby="welcomeTitle">
@@ -338,6 +339,20 @@ const rosterResult = document.getElementById("rosterResult");
 const nameSuggestions = document.getElementById("nameSuggestions");
 let suggestionMatches = [];
 let activeSuggestion = -1;
+window.RoosterAgendaBridge = {
+getCalendarData() {
+const periodLabel = rosterIndex?.period?.label && rosterIndex.period.label !== "unknown" ? rosterIndex.period.label : "";
+return {
+name: currentEmployee?.name || "",
+showFullRoster,
+periodLabel,
+appointmentName: rosterIndex?.display?.appointmentName || "Werkrooster",
+schedules: Array.isArray(currentEmployee?.schedules)
+? currentEmployee.schedules.map((schedule) => ({ date: schedule.date, start: schedule.start, end: schedule.end }))
+: []
+};
+}
+};
 const SEASON_BACKGROUNDS = {
 spring: "Lente.jpg",
 summer: "Zomer.jpg",
@@ -751,5 +766,6 @@ renderEmployee(matches[0], false);
 });
 })();
 </script>
+<script src="agenda-export.js"></script>
 </body>
 </html>
