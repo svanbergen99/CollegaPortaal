@@ -1,0 +1,87 @@
+.wfm-legend {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .86);
+  overflow: hidden;
+}
+.wfm-legend summary {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  color: var(--accent-dark);
+  font-weight: 800;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.wfm-legend summary::-webkit-details-marker { display: none; }
+.wfm-legend summary:hover { background: var(--soft-accent); }
+.wfm-legend-arrow {
+  display: inline-block;
+  font-size: 20px;
+  line-height: 1;
+  transition: transform .18s ease;
+}
+.wfm-legend[open] .wfm-legend-arrow { transform: rotate(180deg); }
+.wfm-legend-panel {
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--line);
+}
+.wfm-legend-intro {
+  margin: 12px 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.wfm-legend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px 12px;
+}
+.wfm-legend-item {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border: 1px solid #edf0f4;
+  border-radius: 9px;
+  background: #fff;
+}
+.wfm-legend-color {
+  flex: 0 0 25px;
+  width: 25px;
+  height: 25px;
+  border-radius: 6px;
+  background: var(--legend-color, #dbe2ea);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .05);
+}
+.wfm-legend-name {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+html[data-theme="dark"] .wfm-legend {
+  border-color: #394454;
+  background: rgba(23, 30, 41, .9);
+}
+html[data-theme="dark"] .wfm-legend summary { color: #e9b0e2; }
+html[data-theme="dark"] .wfm-legend-panel { border-color: #394454; }
+html[data-theme="dark"] .wfm-legend-item {
+  border-color: #303b49;
+  background: #1a222e;
+}
+html[data-theme="dark"] .wfm-legend-color { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
+@media (max-width: 620px) {
+  .wfm-legend-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wfm-legend-item { align-items: flex-start; }
+}
+@media (max-width: 430px) {
+  .wfm-legend-grid { grid-template-columns: 1fr; }
+}
