@@ -20,4 +20,5 @@
   loadStyle("theme.css");
   loadScript("theme.js");
   loadScript("agenda-export-core.js");
+  loadScript("today-workers-close.js");
 })();
