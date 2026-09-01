@@ -4,6 +4,7 @@
   const bridge = window.RoosterAgendaBridge;
   if (!bridge) return;
 
+  const TIME_ZONE = "Europe/Amsterdam";
   const weekdays = ["ma", "di", "wo", "do", "vr", "za", "zo"];
   const monthNames = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
   let imageTheme = "light";
@@ -27,33 +28,30 @@
   `;
   document.head.appendChild(style);
 
+  function amsterdamDateKey(date = new Date()) {
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+    const get = (type) => parts.find((part) => part.type === type)?.value || "";
+    return `${get("year")}-${get("month")}-${get("day")}`;
+  }
+
   function formatTime(value) {
     if (!value) return "";
-    const text = String(value);
-    const simple = text.match(/(?:T|^)(\d{2}):(\d{2})/);
-    if (simple) return `${simple[1]}:${simple[2]}`;
+    const text = String(value).trim();
+    const embedded = text.match(/(?:T|\s)(\d{1,2}):(\d{2})/);
+    if (embedded) return `${embedded[1].padStart(2, "0")}:${embedded[2]}`;
     const plain = text.match(/^(\d{1,2}):(\d{2})$/);
     if (plain) return `${plain[1].padStart(2, "0")}:${plain[2]}`;
     return "";
   }
-  function localDateKey(date = new Date()) {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-  }
-  function dominantMonth(data) {
-    const counts = new Map();
-    for (const schedule of data.schedules || []) {
-      const key = String(schedule?.date || "").slice(0, 7);
-      if (/^\d{4}-\d{2}$/.test(key)) counts.set(key, (counts.get(key) || 0) + 1);
-    }
-    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] || localDateKey().slice(0, 7);
-  }
+
   function monthModel(data) {
-    const monthKey = dominantMonth(data);
+    const monthKey = data?.monthKey || String(data?.schedules?.[0]?.date || "").slice(0, 7) || amsterdamDateKey().slice(0, 7);
     const [yearText, monthText] = monthKey.split("-");
     const year = Number(yearText);
     const monthIndex = Number(monthText) - 1;
-    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-    const mondayOffset = (new Date(year, monthIndex, 1, 12).getDay() + 6) % 7;
+    const daysInMonth = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+    const firstJsDay = new Date(Date.UTC(year, monthIndex, 1, 12)).getUTCDay();
+    const mondayOffset = (firstJsDay + 6) % 7;
     const totalCells = mondayOffset + daysInMonth <= 35 ? 35 : 42;
     const shifts = new Map();
     for (const schedule of data.schedules || []) {
@@ -67,6 +65,7 @@
     }
     return { monthKey, year, monthIndex, daysInMonth, mondayOffset, totalCells, rows: totalCells / 7, shifts };
   }
+
   function roundedRect(ctx, x, y, width, height, radius) {
     const r = Math.min(radius, width / 2, height / 2);
     ctx.beginPath();
@@ -77,10 +76,9 @@
     ctx.arcTo(x, y, x + width, y, r);
     ctx.closePath();
   }
-  function drawCentered(ctx, text, x, y, width) {
-    ctx.textAlign = "center";
-    ctx.fillText(text, x + width / 2, y);
-  }
+
+  function drawCentered(ctx, text, x, y, width) { ctx.textAlign = "center"; ctx.fillText(text, x + width / 2, y); }
+
   function palette(theme) {
     return theme === "dark" ? {
       page: "#111821", header: "#141b25", weekday: "#171e29", empty: "#0d131c", today: "#2b202c",
@@ -90,15 +88,29 @@
       text: "#172033", line: "#d9e0e8", pill: "#7b2f73", pillText: "#ffffff"
     };
   }
+
   function setImageTheme(theme) {
     imageTheme = theme === "dark" ? "dark" : "light";
     const overlay = document.querySelector(".screenshot-calendar-overlay");
     if (!overlay) return;
     overlay.dataset.imageTheme = imageTheme;
-    overlay.querySelectorAll("[data-screenshot-theme]").forEach((button) => {
-      button.setAttribute("aria-pressed", String(button.dataset.screenshotTheme === imageTheme));
-    });
+    overlay.querySelectorAll("[data-screenshot-theme]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.screenshotTheme === imageTheme)));
   }
+
+  function correctTodayHighlight() {
+    const overlay = document.querySelector(".screenshot-calendar-overlay");
+    if (!overlay || overlay.hidden) return;
+    const data = bridge.getCalendarData();
+    const model = monthModel(data);
+    const today = amsterdamDateKey();
+    const days = [...overlay.querySelectorAll(".screenshot-calendar-day")];
+    days.forEach((day) => day.classList.remove("today"));
+    if (!today.startsWith(`${model.monthKey}-`)) return;
+    const dayNumber = Number(today.slice(8, 10));
+    const index = model.mondayOffset + dayNumber - 1;
+    days[index]?.classList.add("today");
+  }
+
   function ensureControls(resetToPageTheme = false) {
     const overlay = document.querySelector(".screenshot-calendar-overlay");
     const stage = overlay?.querySelector(".screenshot-calendar-stage");
@@ -116,7 +128,9 @@
     }
     if (resetToPageTheme) setImageTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
     else setImageTheme(imageTheme);
+    correctTodayHighlight();
   }
+
   function saveImage(theme) {
     const data = bridge.getCalendarData();
     if (!data?.name) return;
@@ -133,91 +147,53 @@
     const ctx = canvas.getContext("2d");
     const cellWidth = width / 7;
 
-    ctx.fillStyle = colors.page;
-    ctx.fillRect(0, 0, width, height);
-    ctx.fillStyle = colors.header;
-    ctx.fillRect(0, 0, width, headerHeight);
-    ctx.fillStyle = colors.text;
-    ctx.font = "700 38px Arial";
+    ctx.fillStyle = colors.page; ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = colors.header; ctx.fillRect(0, 0, width, headerHeight);
+    ctx.fillStyle = colors.text; ctx.font = "700 38px Arial";
     drawCentered(ctx, `${monthNames[model.monthIndex]} ${model.year}`, 0, 67, width);
-    ctx.strokeStyle = colors.line;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, headerHeight);
-    ctx.lineTo(width, headerHeight);
-    ctx.stroke();
-
-    ctx.fillStyle = colors.weekday;
-    ctx.fillRect(0, headerHeight, width, weekdaysHeight);
-    ctx.font = "700 24px Arial";
-    ctx.fillStyle = colors.text;
+    ctx.strokeStyle = colors.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, headerHeight); ctx.lineTo(width, headerHeight); ctx.stroke();
+    ctx.fillStyle = colors.weekday; ctx.fillRect(0, headerHeight, width, weekdaysHeight);
+    ctx.font = "700 24px Arial"; ctx.fillStyle = colors.text;
     weekdays.forEach((day, index) => drawCentered(ctx, day, index * cellWidth, headerHeight + 44, cellWidth));
 
     const gridTop = headerHeight + weekdaysHeight;
-    const today = localDateKey();
+    const today = amsterdamDateKey();
     for (let index = 0; index < model.totalCells; index += 1) {
-      const col = index % 7;
-      const row = Math.floor(index / 7);
-      const x = col * cellWidth;
-      const y = gridTop + row * rowHeight;
+      const col = index % 7, row = Math.floor(index / 7), x = col * cellWidth, y = gridTop + row * rowHeight;
       const day = index - model.mondayOffset + 1;
       const valid = day >= 1 && day <= model.daysInMonth;
-      let fill = colors.page;
-      let date = "";
+      let fill = colors.page, date = "";
       if (!valid) fill = colors.empty;
       else {
         date = `${model.year}-${String(model.monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
         if (date === today) fill = colors.today;
       }
-      ctx.fillStyle = fill;
-      ctx.fillRect(x, y, cellWidth, rowHeight);
+      ctx.fillStyle = fill; ctx.fillRect(x, y, cellWidth, rowHeight);
       if (valid) {
-        ctx.fillStyle = colors.text;
-        ctx.font = "700 23px Arial";
-        ctx.textAlign = "left";
-        ctx.fillText(String(day), x + 12, y + 30);
+        ctx.fillStyle = colors.text; ctx.font = "700 23px Arial"; ctx.textAlign = "left"; ctx.fillText(String(day), x + 12, y + 30);
         const shifts = model.shifts.get(date) || [];
         shifts.slice(0, 3).forEach((shift, shiftIndex) => {
-          const pillX = x + 9;
-          const pillY = y + 43 + shiftIndex * 34;
-          const pillW = cellWidth - 18;
-          const pillH = 27;
-          ctx.fillStyle = colors.pill;
-          roundedRect(ctx, pillX, pillY, pillW, pillH, 7);
-          ctx.fill();
-          ctx.fillStyle = colors.pillText;
-          ctx.font = "700 18px Arial";
-          drawCentered(ctx, shift, pillX, pillY + 20, pillW);
+          const pillX = x + 9, pillY = y + 43 + shiftIndex * 34, pillW = cellWidth - 18, pillH = 27;
+          ctx.fillStyle = colors.pill; roundedRect(ctx, pillX, pillY, pillW, pillH, 7); ctx.fill();
+          ctx.fillStyle = colors.pillText; ctx.font = "700 18px Arial"; drawCentered(ctx, shift, pillX, pillY + 20, pillW);
         });
       }
-      ctx.strokeStyle = colors.line;
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x, y, cellWidth, rowHeight);
+      ctx.strokeStyle = colors.line; ctx.lineWidth = 1; ctx.strokeRect(x, y, cellWidth, rowHeight);
     }
 
     const link = document.createElement("a");
     link.href = canvas.toDataURL("image/png");
     link.download = `Werkrooster_${model.monthKey}_${theme === "dark" ? "donker" : "licht"}.png`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    document.body.appendChild(link); link.click(); link.remove();
   }
 
   const observer = new MutationObserver(() => ensureControls(false));
   observer.observe(document.body, { childList: true, subtree: true });
-
-  document.addEventListener("click", (event) => {
-    if (event.target.closest(".screenshot-roster-button")) {
-      setTimeout(() => ensureControls(true), 0);
-    }
-  });
-
+  document.addEventListener("click", (event) => { if (event.target.closest(".screenshot-roster-button")) setTimeout(() => ensureControls(true), 0); });
   document.addEventListener("click", (event) => {
     const saveButton = event.target.closest("[data-save-image]");
     const overlay = saveButton?.closest(".screenshot-calendar-overlay");
     if (!saveButton || !overlay || overlay.hidden) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    saveImage(imageTheme);
+    event.preventDefault(); event.stopImmediatePropagation(); saveImage(imageTheme);
   }, true);
 })();
