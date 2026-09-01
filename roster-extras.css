@@ -6,15 +6,14 @@
   flex-wrap: wrap;
 }
 .roster-title-row h1 { margin: 0; }
+.search-card.has-roster .roster-title-row h1 { font-size: 22px; }
 .roster-update-stamp {
   color: var(--muted);
   font-size: 13px;
   font-weight: 800;
   white-space: nowrap;
 }
-.today-workers-action {
-  gap: 8px;
-}
+.today-workers-action { gap: 8px; }
 .today-workers-action .today-workers-button {
   width: auto;
   flex: 1 1 0;
@@ -23,9 +22,13 @@
   flex: 0 0 auto;
   min-height: 42px;
   padding: 10px 16px;
+  border: 1px solid #cfc4ce;
+  background: #fff;
+  color: var(--accent-dark);
 }
+.today-workers-close-action:hover { background: var(--soft-accent); }
 html[data-theme="dark"] .today-workers-close-action {
-  border: 1px solid #465263;
+  border-color: #465263;
   background: #171e29;
   color: #e9b0e2;
 }
