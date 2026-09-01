@@ -49,6 +49,12 @@
     return match ? `${match[1].padStart(2, "0")}:${match[2]}` : "";
   }
 
+  function minutesOf(value) {
+    const time = formatTime(value);
+    if (!time) return null;
+    return Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+  }
+
   function formatDate(dateKey) {
     const date = new Date(`${dateKey}T12:00:00Z`);
     return new Intl.DateTimeFormat("nl-NL", { timeZone: TIME_ZONE, weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(date);
@@ -64,12 +70,44 @@
     return null;
   }
 
+  function isWorkSchedule(schedule) {
+    return String(schedule?.status || "").trim().toLowerCase() === "work";
+  }
+
+  function timeWindowIsActive(date, start, end, today, yesterday, nowMinutes) {
+    const startMinutes = minutesOf(start);
+    const endMinutes = minutesOf(end);
+    if (startMinutes === null || endMinutes === null) return false;
+    const overnight = endMinutes <= startMinutes;
+    return date === today
+      ? (overnight ? nowMinutes >= startMinutes : nowMinutes >= startMinutes && nowMinutes < endMinutes)
+      : (date === yesterday && overnight && nowMinutes < endMinutes);
+  }
+
+  function isTimeOffActivity(activity) {
+    const type = String(activity?.type || "").trim().toLowerCase();
+    const name = String(activity?.name || activity?.label || "").trim().toLowerCase();
+    return type === "time_off" || type === "day_off" || /^(?:verlof|afwezig)\b/.test(name);
+  }
+
+  function hasActiveTimeOff(schedule, today, yesterday, nowMinutes) {
+    const date = String(schedule?.date || "").slice(0, 10);
+    return (schedule?.activities || []).some((activity) => {
+      if (!isTimeOffActivity(activity)) return false;
+      const start = formatTime(activity?.start);
+      const end = formatTime(activity?.end);
+      if (!start || !end) return date === today;
+      return timeWindowIsActive(date, start, end, today, yesterday, nowMinutes);
+    });
+  }
+
   function collectToday(roster, today) {
     const workers = [];
     for (const employee of roster?.employees || []) {
-      const schedules = (employee.schedules || []).filter((schedule) => String(schedule?.date || "").slice(0, 10) === today).map((schedule) => ({
-        start: formatTime(schedule.start), end: formatTime(schedule.end)
-      })).filter((schedule) => schedule.start && schedule.end);
+      const schedules = (employee.schedules || [])
+        .filter((schedule) => String(schedule?.date || "").slice(0, 10) === today && isWorkSchedule(schedule))
+        .map((schedule) => ({ start: formatTime(schedule.start), end: formatTime(schedule.end) }))
+        .filter((schedule) => schedule.start && schedule.end);
       if (!schedules.length) continue;
       schedules.sort((a, b) => a.start.localeCompare(b.start) || a.end.localeCompare(b.end));
       workers.push({ name: employee.name, schedules });
@@ -85,17 +123,14 @@
     const workers = [];
     for (const employee of roster?.employees || []) {
       const active = (employee.schedules || []).map((schedule) => {
+        if (!isWorkSchedule(schedule)) return null;
         const date = String(schedule?.date || "").slice(0, 10);
         const start = formatTime(schedule.start);
         const end = formatTime(schedule.end);
         if (!start || !end) return null;
-        const startMinutes = Number(start.slice(0, 2)) * 60 + Number(start.slice(3, 5));
-        const endMinutes = Number(end.slice(0, 2)) * 60 + Number(end.slice(3, 5));
-        const overnight = endMinutes <= startMinutes;
-        const isActive = date === today
-          ? (overnight ? nowMinutes >= startMinutes : nowMinutes >= startMinutes && nowMinutes < endMinutes)
-          : (date === yesterday && overnight && nowMinutes < endMinutes);
-        return isActive ? { start, end } : null;
+        if (!timeWindowIsActive(date, start, end, today, yesterday, nowMinutes)) return null;
+        if (hasActiveTimeOff(schedule, today, yesterday, nowMinutes)) return null;
+        return { start, end };
       }).filter(Boolean);
       if (!active.length) continue;
       workers.push({ name: employee.name, schedules: active });
