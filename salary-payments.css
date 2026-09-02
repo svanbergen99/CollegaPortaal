@@ -65,7 +65,7 @@ html[data-theme="dark"] .salary-payment-row.salary-payment-next {
     margin-bottom: 14px;
   }
   .next-salary-payment-bar strong { white-space: normal; }
-  .today-workers-action { grid-template-columns: 1fr 1fr 1fr; }
+  .today-workers-action { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 470px) {
