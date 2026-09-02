@@ -5,7 +5,7 @@
     "KCDTeam01", "KCDTeam02", "KCDTeam03", "KCDTeam04", "KCDTeam05", "KCDTeam06",
     "WOTeam01", "WOTeam02", "WOTeam03", "WOTeam04", "WOTeam05", "WOTeam06", "WOTeam07", "WOTeam08"
   ]);
-  const ALLOWED_HASHES = new Set(window.RoosterAccessPermissions || []);
+  const PERMISSIONS = Array.isArray(window.RoosterAccessPermissions) ? window.RoosterAccessPermissions : [];
   const encoder = new TextEncoder();
 
   const body = document.body;
@@ -20,18 +20,21 @@
   const nameForm = document.getElementById("nameForm");
   const employeeName = document.getElementById("employeeName");
   const rosterResult = document.getElementById("rosterResult");
+  const searchCard = document.querySelector(".search-card");
 
-  if (!body || !welcomeOverlay || !continueButton || !unlockForm || !rosterId || !rosterPassword || !app || !nameForm || !employeeName) return;
+  if (!body || !welcomeOverlay || !continueButton || !unlockForm || !rosterId || !rosterPassword || !app || !nameForm || !employeeName || !rosterResult || !searchCard) return;
 
   body.classList.add("permission-auth-enabled");
 
   let overlay = null;
   let selectedTeam = "";
-  let allowedName = "";
+  let activePermission = null;
   let colleagueFirstName = "Collega";
   let authPending = false;
+  let unlockCompleted = false;
   let passwordInput = null;
   let authError = null;
+  let resolvedEmployeeName = "";
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -68,6 +71,13 @@
     const prefixes = new Set(["van", "de", "der", "den", "het", "'t", "ten", "ter", "von"]);
     const candidate = prefixes.has(parts[0].toLocaleLowerCase("nl-NL")) && parts.length > 1 ? parts.at(-1) : parts[0];
     return `${candidate.charAt(0).toLocaleUpperCase("nl-NL")}${candidate.slice(1)}`;
+  }
+
+  async function permissionForInput(value) {
+    const firstName = firstNameFromInput(value);
+    if (!firstName || firstName === "Collega") return null;
+    const loginHash = await hashName(firstName);
+    return PERMISSIONS.find((permission) => permission?.loginHash === loginHash && permission?.rosterHash) || null;
   }
 
   function ensureOverlay() {
@@ -136,8 +146,8 @@
     target.innerHTML = `
       <form id="permissionNameForm" class="unlock-card permission-auth-card" autocomplete="off">
         <h1>Wie ben je?</h1>
-        <p>Vul je volledige naam in. Alleen collega's met toestemming kunnen verder.</p>
-        <label for="permissionNameInput">Naam</label>
+        <p>Vul je voornaam in. Alleen collega's met toestemming kunnen verder.</p>
+        <label for="permissionNameInput">Voornaam</label>
         <input id="permissionNameInput" type="text" autocomplete="off" autocapitalize="words" required>
         <button class="full-button" type="submit">Verder</button>
         <button id="permissionBackToTeam" class="permission-auth-back" type="button">Terug</button>
@@ -153,14 +163,15 @@
       error.textContent = "";
       const value = input.value.trim();
       if (!value) return;
-      const hash = await hashName(value);
-      if (!ALLOWED_HASHES.has(hash)) {
-        error.textContent = "Deze naam heeft geen toestemming voor roosterinzicht.";
+      const permission = await permissionForInput(value);
+      if (!permission) {
+        error.textContent = "Deze voornaam heeft geen toestemming voor roosterinzicht.";
         input.select();
         return;
       }
-      allowedName = value;
+      activePermission = permission;
       colleagueFirstName = firstNameFromInput(value);
+      resolvedEmployeeName = "";
       showPasswordStep();
     });
     focusSoon("#permissionNameInput");
@@ -189,7 +200,7 @@
     form?.addEventListener("submit", (event) => {
       event.preventDefault();
       const password = passwordInput.value;
-      if (!password || !selectedTeam || authPending) return;
+      if (!password || !selectedTeam || !activePermission || authPending) return;
       authPending = true;
       authError.textContent = "";
       submitButton.disabled = true;
@@ -202,26 +213,86 @@
     focusSoon("#permissionPasswordInput");
   }
 
-  function openAllowedRoster(attempt = 0) {
-    if (!allowedName || !employeeName || !nameForm) return;
-    employeeName.value = allowedName;
-    nameForm.requestSubmit();
+  async function resolveEmployeeName(attempt = 0) {
+    if (resolvedEmployeeName) return resolvedEmployeeName;
+    if (!activePermission?.rosterHash) return "";
 
-    setTimeout(() => {
-      if (rosterResult?.querySelector(".employee-head")) {
-        employeeName.value = "";
+    const monthBridge = window.RoosterMonthBridge;
+    const state = monthBridge?.getState?.() || {};
+    const monthKeys = [...new Set([
+      state.activeMonthKey,
+      state.currentMonthKey,
+      state.coreMonthKey,
+      ...(state.availableMonths || [])
+    ].filter((value) => /^\d{4}-\d{2}$/.test(String(value || ""))))];
+
+    for (const monthKey of monthKeys) {
+      const roster = monthBridge?.getRoster?.(monthKey);
+      for (const employee of roster?.employees || []) {
+        if (await hashName(employee?.name) === activePermission.rosterHash) {
+          resolvedEmployeeName = employee.name;
+          return resolvedEmployeeName;
+        }
+      }
+    }
+
+    if (attempt >= 30) return "";
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    return resolveEmployeeName(attempt + 1);
+  }
+
+  function closeOverview() {
+    rosterResult.hidden = true;
+    rosterResult.innerHTML = "";
+    searchCard.classList.remove("has-roster", "has-month-roster");
+  }
+
+  async function openAllowedRoster() {
+    const actualName = await resolveEmployeeName();
+    if (!actualName) {
+      rosterResult.innerHTML = '<div class="no-activities">Je eigen rooster kon nog niet worden gekoppeld aan deze toestemming.</div>';
+      rosterResult.hidden = false;
+      searchCard.classList.add("has-roster");
+      return;
+    }
+
+    employeeName.value = actualName;
+    nameForm.requestSubmit();
+    setTimeout(() => { employeeName.value = ""; }, 0);
+  }
+
+  function ensureMyRosterButton() {
+    const action = document.querySelector(".today-workers-action");
+    if (!action) return null;
+    let button = document.getElementById("myRosterButton");
+    if (button) return button;
+
+    button = document.createElement("button");
+    button.id = "myRosterButton";
+    button.className = "today-workers-button";
+    button.type = "button";
+    button.textContent = "Mijn rooster";
+    action.prepend(button);
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      if (!rosterResult.hidden && rosterResult.querySelector(".employee-head")) {
+        closeOverview();
         return;
       }
-      if (attempt < 12) openAllowedRoster(attempt + 1);
-    }, 100);
+      openAllowedRoster();
+    });
+    return button;
   }
 
   function completeUnlock() {
-    if (app.hidden || !allowedName) return;
+    if (app.hidden || !activePermission) return;
     authPending = false;
     if (overlay?.isConnected) overlay.remove();
     overlay = null;
     unlockOverlay.hidden = true;
+    ensureMyRosterButton();
+    if (unlockCompleted) return;
+    unlockCompleted = true;
     setTimeout(() => openAllowedRoster(), 0);
   }
 
