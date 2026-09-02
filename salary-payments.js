@@ -24,6 +24,7 @@
   const action = document.querySelector(".today-workers-action");
   if (!app || !searchCard || !rosterResult || !action) return;
 
+  let showAllPayments = false;
   let salaryButton = document.getElementById("salaryPaymentButton");
   if (!salaryButton) {
     salaryButton = document.createElement("button");
@@ -35,14 +36,13 @@
   }
 
   function amsterdamDateKey(date = new Date()) {
-    const parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone: TIME_ZONE,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit"
-    }).formatToParts(date);
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
     const get = (type) => parts.find((part) => part.type === type)?.value || "";
     return `${get("year")}-${get("month")}-${get("day")}`;
+  }
+
+  function currentMonthKey() {
+    return amsterdamDateKey().slice(0, 7);
   }
 
   function formatDate(dateKey, includeWeekday = true) {
@@ -60,6 +60,12 @@
     return PAYMENTS.find((payment) => payment.date >= today) || null;
   }
 
+  function visiblePayments() {
+    if (showAllPayments) return PAYMENTS;
+    const monthKey = currentMonthKey();
+    return PAYMENTS.filter((payment) => payment.date.slice(0, 7) >= monthKey);
+  }
+
   function ensureNextPaymentBar() {
     let bar = document.getElementById("nextSalaryPaymentBar");
     if (!bar) {
@@ -70,7 +76,6 @@
       const title = searchCard.querySelector(":scope > h1");
       (titleRow || title || searchCard.firstElementChild)?.before(bar);
     }
-
     const upcoming = nextPayment();
     bar.innerHTML = upcoming
       ? `<span>Volgende salaris uitbetaling:</span><strong>${formatDate(upcoming.date, false)}</strong>`
@@ -79,12 +84,7 @@
   }
 
   function escapeHtml(value) {
-    return String(value ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
+    return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
   }
 
   function activeOverviewTitle() {
@@ -93,6 +93,7 @@
   }
 
   function closeOverview() {
+    showAllPayments = false;
     rosterResult.hidden = true;
     rosterResult.innerHTML = "";
     searchCard.classList.remove("has-roster", "has-month-roster");
@@ -101,11 +102,10 @@
   function renderPayments() {
     const today = amsterdamDateKey();
     const upcoming = nextPayment(today);
-    const rows = PAYMENTS.map((payment) => {
-      const past = payment.date < today;
+    const payments = visiblePayments();
+    const rows = payments.map((payment) => {
       const isNext = upcoming?.date === payment.date;
       const classes = ["today-worker-row", "salary-payment-row"];
-      if (past) classes.push("salary-payment-past");
       if (isNext) classes.push("salary-payment-next");
       return `<div class="${classes.join(" ")}"><span class="today-worker-name">${escapeHtml(payment.month)}</span><span class="today-worker-time">${escapeHtml(formatDate(payment.date, false))}</span></div>`;
     }).join("");
@@ -114,11 +114,12 @@
       <div class="today-workers-head salary-payments-head">
         <div>
           <h2>Salaris uitbetaling</h2>
-          <p class="today-workers-date">Bekende uitbetalingsdata 2026 en januari 2027</p>
+          <p class="today-workers-date">${showAllPayments ? "Alle bekende uitbetalingsdata" : "Huidige en komende maanden"}</p>
         </div>
-        <span class="today-workers-count">${PAYMENTS.length} betaaldata</span>
+        <span class="today-workers-count">${payments.length} betaal${payments.length === 1 ? "datum" : "data"}</span>
       </div>
-      <div class="today-workers-list salary-payment-list">${rows}</div>`;
+      <button type="button" class="today-workers-button salary-history-toggle" aria-pressed="${showAllPayments}">Laat alles zien</button>
+      <div class="today-workers-list salary-payment-list">${rows || `<div class="no-activities">Er zijn geen huidige of komende uitbetalingsdata bekend.</div>`}</div>`;
     rosterResult.hidden = false;
     searchCard.classList.add("has-roster");
     searchCard.classList.remove("has-month-roster");
@@ -130,10 +131,18 @@
       closeOverview();
       return;
     }
+    showAllPayments = false;
+    renderPayments();
+  });
+
+  rosterResult.addEventListener("click", (event) => {
+    const button = event.target.closest(".salary-history-toggle");
+    if (!button || activeOverviewTitle() !== "Salaris uitbetaling") return;
+    event.preventDefault();
+    showAllPayments = !showAllPayments;
     renderPayments();
   });
 
   window.addEventListener("rooster-unlocked", ensureNextPaymentBar);
-
   if (!app.hidden) ensureNextPaymentBar();
 })();
