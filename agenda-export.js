@@ -1,14 +1,19 @@
 (() => {
   "use strict";
 
-  const VERSION = "20260902-18";
+  const VERSION = "20260902-19";
   const FILE_MONTHS = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
+  const MONTH_FILE_RE = /^Roosterindex_(Januari|Februari|Maart|April|Mei|Juni|Juli|Augustus|September|Oktober|November|December)\.json$/i;
 
   function currentAmsterdamMonth() {
     const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Amsterdam", year: "numeric", month: "2-digit" }).formatToParts(new Date());
     const year = parts.find((part) => part.type === "year")?.value || "";
     const month = parts.find((part) => part.type === "month")?.value || "";
     return `${year}-${month}`;
+  }
+
+  function currentAmsterdamYear() {
+    return currentAmsterdamMonth().slice(0, 4);
   }
 
   function shiftMonth(monthKey, amount) {
@@ -22,7 +27,35 @@
     return `Roosterindex_${FILE_MONTHS[month - 1]}.json`;
   }
 
-  if (!window.__roosterNativeFetch) window.__roosterNativeFetch = window.fetch.bind(window);
+  function yearSuffixedMonthUrl(inputUrl) {
+    try {
+      const parsed = new URL(String(inputUrl), window.location.href);
+      const parts = parsed.pathname.split("/");
+      const basename = parts.at(-1) || "";
+      const match = basename.match(MONTH_FILE_RE);
+      if (!match) return "";
+      parts[parts.length - 1] = `Roosterindex_${match[1]}_${currentAmsterdamYear()}.json`;
+      parsed.pathname = parts.join("/");
+      return parsed.href;
+    } catch (_) {
+      return "";
+    }
+  }
+
+  if (!window.__roosterRawFetch) window.__roosterRawFetch = window.fetch.bind(window);
+  if (!window.__roosterYearFilenameCompat) {
+    const rawFetch = window.__roosterRawFetch;
+    window.__roosterNativeFetch = async function compatibleRosterFetch(input, init) {
+      const url = typeof input === "string" ? input : input?.url || "";
+      const yearUrl = yearSuffixedMonthUrl(url);
+      if (!yearUrl) return rawFetch(input, init);
+      const response = await rawFetch(yearUrl, init);
+      if (response.status !== 404) return response;
+      return rawFetch(input, init);
+    };
+    window.__roosterYearFilenameCompat = true;
+  }
+
   if (!window.__roosterAutoFetchPatched) {
     const nativeFetch = window.__roosterNativeFetch;
     window.fetch = async function autoMonthFetch(input, init) {
