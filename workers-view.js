@@ -139,6 +139,17 @@
     return workers;
   }
 
+  function activeOverviewTitle() {
+    if (rosterResult.hidden) return "";
+    return rosterResult.querySelector(".today-workers-head h2")?.textContent?.trim() || "";
+  }
+
+  function closeOverview() {
+    rosterResult.hidden = true;
+    rosterResult.innerHTML = "";
+    searchCard.classList.remove("has-roster", "has-month-roster");
+  }
+
   function render(title, today, workers, emptyText) {
     const rows = workers.map((worker) => {
       const ranges = worker.schedules.map((schedule) => `${schedule.start} – ${schedule.end}`).join(", ");
@@ -170,6 +181,14 @@
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
-    if (button.id === "whoWorksNowButton") showNow(); else showToday();
+
+    const title = button.id === "whoWorksNowButton" ? "Wie werkt nu" : "Wie werkt vandaag";
+    if (activeOverviewTitle() === title) {
+      closeOverview();
+      return;
+    }
+
+    if (button.id === "whoWorksNowButton") showNow();
+    else showToday();
   }, true);
 })();
