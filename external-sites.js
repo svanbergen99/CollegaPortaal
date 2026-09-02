@@ -29,6 +29,13 @@
   ]);
 
   const FLOATING_GROUP = GROUPS.find((group) => group.title === "Belangrijke Websites");
+  const FLOATING_LINKS = Object.freeze([
+    Object.freeze({
+      label: "Verlof aanvragen",
+      url: "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?Host=Teams&lang=%7Blocale%7D&groupId=%7BgroupId%7D&tid=%7Btid%7D&teamsTheme=%7Btheme%7D&upn=%7Bupn%7D&id=EvJ-w6PUtkSS3w0d_4VgT5msSQM886ZJrZo0XE5plspUQ0wyN0VLOUMzVTM0UldKMEtLNUtZWlMwNyQlQCN0PWcu"
+    }),
+    ...(FLOATING_GROUP?.links || [])
+  ]);
   const app = document.getElementById("app");
   if (!app) return;
 
@@ -105,7 +112,7 @@
   }
 
   async function openFloatingSites() {
-    if (!FLOATING_GROUP?.links?.length) return;
+    if (!FLOATING_LINKS.length) return;
 
     if (!("documentPictureInPicture" in window)) {
       setFloatingStatus("Deze Edge-versie ondersteunt de zwevende websites niet.", true);
@@ -122,7 +129,7 @@
     try {
       const pipWindow = await window.documentPictureInPicture.requestWindow({
         width: 340,
-        height: 570,
+        height: 620,
         preferInitialWindowPlacement: false
       });
 
@@ -139,7 +146,7 @@
             <h1>Belangrijke Websites</h1>
             <p>Dit venster blijft op de voorgrond. Kies een website om die in Edge te openen.</p>
           </div>
-          ${FLOATING_GROUP.links.map((link, index) => `
+          ${FLOATING_LINKS.map((link, index) => `
             <button class="floating-site-button" type="button" data-floating-site="${index}">
               ${escapeHtml(link.label)} <span>↗</span>
             </button>`).join("")}
@@ -148,7 +155,7 @@
       pipWindow.document.querySelectorAll("[data-floating-site]").forEach((button) => {
         button.addEventListener("click", () => {
           const index = Number(button.dataset.floatingSite);
-          const link = FLOATING_GROUP.links[index];
+          const link = FLOATING_LINKS[index];
           if (!link?.url) return;
           window.open(link.url, "_blank", "noopener,noreferrer");
         });
