@@ -73,11 +73,17 @@
     return `${candidate.charAt(0).toLocaleUpperCase("nl-NL")}${candidate.slice(1)}`;
   }
 
+  function hasAllColleaguesAccess(permission = activePermission) {
+    return permission?.scope === "all";
+  }
+
   async function permissionForInput(value) {
     const firstName = firstNameFromInput(value);
     if (!firstName || firstName === "Collega") return null;
     const loginHash = await hashName(firstName);
-    return PERMISSIONS.find((permission) => permission?.loginHash === loginHash && permission?.rosterHash) || null;
+    return PERMISSIONS.find((permission) =>
+      permission?.loginHash === loginHash && (permission?.rosterHash || hasAllColleaguesAccess(permission))
+    ) || null;
   }
 
   function ensureOverlay() {
@@ -213,20 +219,23 @@
     focusSoon("#permissionPasswordInput");
   }
 
-  async function resolveEmployeeName(attempt = 0) {
-    if (resolvedEmployeeName) return resolvedEmployeeName;
-    if (!activePermission?.rosterHash) return "";
-
+  function availableMonthKeys() {
     const monthBridge = window.RoosterMonthBridge;
     const state = monthBridge?.getState?.() || {};
-    const monthKeys = [...new Set([
+    return [...new Set([
       state.activeMonthKey,
       state.currentMonthKey,
       state.coreMonthKey,
       ...(state.availableMonths || [])
     ].filter((value) => /^\d{4}-\d{2}$/.test(String(value || ""))))];
+  }
 
-    for (const monthKey of monthKeys) {
+  async function resolveEmployeeName(attempt = 0) {
+    if (resolvedEmployeeName) return resolvedEmployeeName;
+    if (!activePermission?.rosterHash) return "";
+
+    const monthBridge = window.RoosterMonthBridge;
+    for (const monthKey of availableMonthKeys()) {
       const roster = monthBridge?.getRoster?.(monthKey);
       for (const employee of roster?.employees || []) {
         if (await hashName(employee?.name) === activePermission.rosterHash) {
@@ -241,10 +250,33 @@
     return resolveEmployeeName(attempt + 1);
   }
 
+  async function collectEmployeeNames(attempt = 0) {
+    const monthBridge = window.RoosterMonthBridge;
+    const names = new Set();
+    for (const monthKey of availableMonthKeys()) {
+      const roster = monthBridge?.getRoster?.(monthKey);
+      for (const employee of roster?.employees || []) {
+        const name = String(employee?.name || "").trim();
+        if (name) names.add(name);
+      }
+    }
+    if (names.size) return [...names].sort((a, b) => a.localeCompare(b, "nl"));
+    if (attempt >= 30) return [];
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    return collectEmployeeNames(attempt + 1);
+  }
+
   function closeOverview() {
     rosterResult.hidden = true;
     rosterResult.innerHTML = "";
     searchCard.classList.remove("has-roster", "has-month-roster");
+  }
+
+  function openEmployeeRoster(actualName) {
+    if (!actualName) return;
+    employeeName.value = actualName;
+    nameForm.requestSubmit();
+    setTimeout(() => { employeeName.value = ""; }, 0);
   }
 
   async function openAllowedRoster() {
@@ -255,10 +287,42 @@
       searchCard.classList.add("has-roster");
       return;
     }
+    openEmployeeRoster(actualName);
+  }
 
-    employeeName.value = actualName;
-    nameForm.requestSubmit();
-    setTimeout(() => { employeeName.value = ""; }, 0);
+  async function openAllColleagues() {
+    if (!hasAllColleaguesAccess()) return;
+    const names = await collectEmployeeNames();
+    if (!names.length) {
+      rosterResult.innerHTML = '<div class="no-activities">Er konden nog geen collega\'s uit het rooster worden geladen.</div>';
+      rosterResult.hidden = false;
+      searchCard.classList.add("has-roster");
+      return;
+    }
+
+    rosterResult.innerHTML = `
+      <div class="manager-colleagues-view">
+        <div class="today-workers-head">
+          <div>
+            <h2>Alle collega's</h2>
+            <p class="today-workers-date">Kies een collega om het volledige rooster te openen.</p>
+          </div>
+        </div>
+        <div class="manager-colleagues-grid">
+          ${names.map((name, index) => `<button class="today-workers-button manager-colleague-button" type="button" data-colleague-index="${index}">${escapeHtml(name)}</button>`).join("")}
+        </div>
+      </div>`;
+    rosterResult.hidden = false;
+    searchCard.classList.add("has-roster");
+    searchCard.classList.remove("has-month-roster");
+
+    rosterResult.querySelectorAll("[data-colleague-index]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const index = Number(button.dataset.colleagueIndex);
+        if (!Number.isInteger(index) || !names[index]) return;
+        openEmployeeRoster(names[index]);
+      });
+    });
   }
 
   function ensureMyRosterButton() {
@@ -284,13 +348,46 @@
     return button;
   }
 
+  function ensureAllColleaguesButton() {
+    const action = document.querySelector(".today-workers-action");
+    if (!action) return null;
+    let button = document.getElementById("allColleaguesButton");
+    if (button) return button;
+
+    button = document.createElement("button");
+    button.id = "allColleaguesButton";
+    button.className = "today-workers-button";
+    button.type = "button";
+    button.textContent = "Alle collega's";
+    action.prepend(button);
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      if (!rosterResult.hidden && rosterResult.querySelector(".manager-colleagues-view")) {
+        closeOverview();
+        return;
+      }
+      openAllColleagues();
+    });
+    return button;
+  }
+
+  function configureAccessButtons() {
+    if (hasAllColleaguesAccess()) {
+      document.getElementById("myRosterButton")?.remove();
+      ensureAllColleaguesButton();
+      return;
+    }
+    document.getElementById("allColleaguesButton")?.remove();
+    ensureMyRosterButton();
+  }
+
   function completeUnlock() {
     if (app.hidden || !activePermission) return;
     authPending = false;
     if (overlay?.isConnected) overlay.remove();
     overlay = null;
     unlockOverlay.hidden = true;
-    ensureMyRosterButton();
+    configureAccessButtons();
     if (unlockCompleted) return;
     unlockCompleted = true;
     closeOverview();
