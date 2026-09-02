@@ -1,10 +1,16 @@
 (() => {
   "use strict";
 
+  const LEAVE_REQUEST = Object.freeze({
+    label: "Verlof aanvragen",
+    url: "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?Host=Teams&lang=%7Blocale%7D&groupId=%7BgroupId%7D&tid=%7Btid%7D&teamsTheme=%7Btheme%7D&upn=%7Bupn%7D&id=EvJ-w6PUtkSS3w0d_4VgT5msSQM886ZJrZo0XE5plspUQ0wyN0VLOUMzVTM0UldKMEtLNUtZWlMwNyQlQCN0PWcu"
+  });
+
   const GROUPS = Object.freeze([
     Object.freeze({
       title: "Belangrijke Websites Werk",
       links: Object.freeze([
+        LEAVE_REQUEST,
         Object.freeze({ label: "1MDW", url: "https://azkrplbs001.az.unix.corp:44300/sap(bD1ubCZjPTEwMCZkPW1pbg==)/bc/bsp/sap/crm_ui_start/default.htm" }),
         Object.freeze({ label: "Brein", url: "https://brein-sio-particulier.custhelp.com/app/home/" }),
         Object.freeze({ label: "Noodprocedure formulier", url: "https://achmea.sharepoint.com/sites/SP-15261/Noodprocedures/Noodprocedures.aspx", warning: "Alleen gebruiken als Traffic toestemming geeft" }),
@@ -30,10 +36,7 @@
 
   const FLOATING_GROUP = GROUPS.find((group) => group.title === "Belangrijke Websites");
   const FLOATING_LINKS = Object.freeze([
-    Object.freeze({
-      label: "Verlof aanvragen",
-      url: "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?Host=Teams&lang=%7Blocale%7D&groupId=%7BgroupId%7D&tid=%7Btid%7D&teamsTheme=%7Btheme%7D&upn=%7Bupn%7D&id=EvJ-w6PUtkSS3w0d_4VgT5msSQM886ZJrZo0XE5plspUQ0wyN0VLOUMzVTM0UldKMEtLNUtZWlMwNyQlQCN0PWcu"
-    }),
+    LEAVE_REQUEST,
     ...(FLOATING_GROUP?.links || [])
   ]);
   const app = document.getElementById("app");
