@@ -293,7 +293,7 @@
     ensureMyRosterButton();
     if (unlockCompleted) return;
     unlockCompleted = true;
-    setTimeout(() => openAllowedRoster(), 0);
+    closeOverview();
   }
 
   continueButton.addEventListener("click", (event) => {
