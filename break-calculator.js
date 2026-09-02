@@ -206,9 +206,9 @@
         </div>
 
         <section class="break-timer-card" aria-label="Pauzetimer">
-          <div class="break-timer-title">Pauzetimer</div>
-          <div class="break-timer-clock" id="breakTimerElapsed">00:00:00</div>
-          <div class="break-timer-meta"><span>Resterend</span><strong id="breakTimerRemaining">--:--:--</strong></div>
+          <div class="break-timer-title">Resterende pauzetijd</div>
+          <div class="break-timer-clock" id="breakTimerRemaining">--:--:--</div>
+          <div class="break-timer-meta"><span>Verstreken</span><strong id="breakTimerElapsed">00:00:00</strong></div>
           <div class="break-progress"><span id="breakTimerProgress"></span></div>
           <div id="breakTimerStatus" class="break-timer-status">Bereken eerst je pauzetijd.</div>
           <div class="break-timer-actions">
