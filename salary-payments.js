@@ -87,6 +87,17 @@
       .replaceAll("'", "&#039;");
   }
 
+  function activeOverviewTitle() {
+    if (rosterResult.hidden) return "";
+    return rosterResult.querySelector(".today-workers-head h2")?.textContent?.trim() || "";
+  }
+
+  function closeOverview() {
+    rosterResult.hidden = true;
+    rosterResult.innerHTML = "";
+    searchCard.classList.remove("has-roster", "has-month-roster");
+  }
+
   function renderPayments() {
     const today = amsterdamDateKey();
     const upcoming = nextPayment(today);
@@ -115,6 +126,10 @@
 
   salaryButton.addEventListener("click", (event) => {
     event.preventDefault();
+    if (activeOverviewTitle() === "Salaris uitbetaling") {
+      closeOverview();
+      return;
+    }
     renderPayments();
   });
 
