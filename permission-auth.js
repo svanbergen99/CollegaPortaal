@@ -1,7 +1,10 @@
 (() => {
   "use strict";
 
-  const TEAM_ID = "KCDTeam03";
+  const TEAM_IDS = Object.freeze([
+    "KCDTeam01", "KCDTeam02", "KCDTeam03", "KCDTeam04", "KCDTeam05", "KCDTeam06",
+    "WOTeam01", "WOTeam02", "WOTeam03", "WOTeam04", "WOTeam05", "WOTeam06", "WOTeam07", "WOTeam08"
+  ]);
   const ALLOWED_HASHES = new Set(window.RoosterAccessPermissions || []);
   const encoder = new TextEncoder();
 
@@ -23,6 +26,7 @@
   body.classList.add("permission-auth-enabled");
 
   let overlay = null;
+  let selectedTeam = "";
   let allowedName = "";
   let colleagueFirstName = "Collega";
   let authPending = false;
@@ -81,19 +85,49 @@
     requestAnimationFrame(() => ensureOverlay().querySelector(selector)?.focus());
   }
 
+  function teamOptionsHtml() {
+    const kcd = TEAM_IDS.filter((team) => team.startsWith("KCD")).map((team) =>
+      `<option value="${team}"${selectedTeam === team ? " selected" : ""}>${team}</option>`
+    ).join("");
+    const wo = TEAM_IDS.filter((team) => team.startsWith("WO")).map((team) =>
+      `<option value="${team}"${selectedTeam === team ? " selected" : ""}>${team}</option>`
+    ).join("");
+    return `<option value="">Kies een team</option><optgroup label="KCD Teams">${kcd}</optgroup><optgroup label="WO Teams">${wo}</optgroup>`;
+  }
+
   function showTeamStep() {
     authPending = false;
     unlockOverlay.hidden = true;
     const target = ensureOverlay();
     target.innerHTML = `
-      <section class="unlock-card permission-auth-card">
+      <form id="permissionTeamForm" class="unlock-card permission-auth-card" autocomplete="off">
         <h1>Selecteer je team</h1>
         <p>Kies het team waarvoor je roosterinzicht wilt openen.</p>
-        <button id="permissionTeamButton" class="permission-auth-team-button" type="button">${escapeHtml(TEAM_ID)}</button>
-      </section>`;
+        <label for="permissionTeamSelect">Team</label>
+        <select id="permissionTeamSelect" class="permission-auth-team-select" required>
+          ${teamOptionsHtml()}
+        </select>
+        <button class="full-button" type="submit">Verder</button>
+        <div id="permissionTeamError" class="permission-auth-error" aria-live="polite"></div>
+      </form>`;
     target.hidden = false;
-    target.querySelector("#permissionTeamButton")?.addEventListener("click", showNameStep);
-    focusSoon("#permissionTeamButton");
+
+    const form = target.querySelector("#permissionTeamForm");
+    const select = target.querySelector("#permissionTeamSelect");
+    const error = target.querySelector("#permissionTeamError");
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      error.textContent = "";
+      const value = select?.value || "";
+      if (!TEAM_IDS.includes(value)) {
+        error.textContent = "Selecteer eerst een team.";
+        select?.focus();
+        return;
+      }
+      selectedTeam = value;
+      showNameStep();
+    });
+    focusSoon("#permissionTeamSelect");
   }
 
   function showNameStep() {
@@ -138,7 +172,7 @@
     target.innerHTML = `
       <form id="permissionPasswordForm" class="unlock-card permission-auth-card" autocomplete="off">
         <h1>Welkom ${escapeHtml(colleagueFirstName)}</h1>
-        <p>Typ hier je Team Wachtwoord:</p>
+        <p>Typ hier je Team Wachtwoord voor <strong>${escapeHtml(selectedTeam)}</strong>:</p>
         <label for="permissionPasswordInput">Team Wachtwoord</label>
         <input id="permissionPasswordInput" type="password" autocomplete="new-password" required>
         <button id="permissionUnlockButton" class="full-button" type="submit">Rooster ontgrendelen</button>
@@ -155,12 +189,12 @@
     form?.addEventListener("submit", (event) => {
       event.preventDefault();
       const password = passwordInput.value;
-      if (!password || authPending) return;
+      if (!password || !selectedTeam || authPending) return;
       authPending = true;
       authError.textContent = "";
       submitButton.disabled = true;
 
-      rosterId.value = TEAM_ID;
+      rosterId.value = selectedTeam;
       rosterPassword.value = password;
       unlockOverlay.hidden = true;
       unlockForm.requestSubmit();
@@ -207,7 +241,7 @@
       authPending = false;
       const submitButton = overlay?.querySelector("#permissionUnlockButton");
       if (submitButton) submitButton.disabled = false;
-      if (authError) authError.textContent = "Het Team Wachtwoord is niet juist.";
+      if (authError) authError.textContent = "Het Team Wachtwoord is niet juist voor het geselecteerde team.";
       if (passwordInput) {
         passwordInput.value = "";
         passwordInput.focus();
