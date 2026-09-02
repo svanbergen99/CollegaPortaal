@@ -3,12 +3,11 @@
 
   const TIME_ZONE = "Europe/Amsterdam";
   const REFRESH_MS = 15000;
-  const encoder = new TextEncoder();
 
   const SCHEDULES = Object.freeze({
     "2026-09-02": Object.freeze([
-      Object.freeze({ start: "08:00", end: "13:00", nameHash: "859a8d31cd6d661faf1821d2fc40b91dc64ef678f1e24d6a2c4b58778d8b213f" }),
-      Object.freeze({ start: "13:00", end: "18:00", nameHash: "ff96b4f89912b19a443e551f25c1928d129547a0dab7f0ccc009af430443686d" })
+      Object.freeze({ start: "08:00", end: "13:00", name: "Marjan van Staalduinen" }),
+      Object.freeze({ start: "13:00", end: "18:00", name: "Hendrik Steenhouwer" })
     ])
   });
 
@@ -16,9 +15,7 @@
   const searchCard = document.querySelector(".search-card");
   if (!app || !searchCard) return;
 
-  const nameCache = new Map();
   let refreshTimer = null;
-  let resolving = false;
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -64,36 +61,6 @@
     return Number(match[1]) * 60 + Number(match[2]);
   }
 
-  function nameSignature(value) {
-    return String(value || "")
-      .toLocaleLowerCase("nl-NL")
-      .normalize("NFD")
-      .replace(/\p{M}/gu, "")
-      .replace(/[^\p{L}\p{N}]+/gu, " ")
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b, "nl"))
-      .join("|");
-  }
-
-  async function hashName(value) {
-    const signature = nameSignature(value);
-    if (!signature) return "";
-    const digest = await crypto.subtle.digest("SHA-256", encoder.encode(signature));
-    return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-  }
-
-  function availableMonthKeys() {
-    const state = window.RoosterMonthBridge?.getState?.() || {};
-    return [...new Set([
-      state.activeMonthKey,
-      state.currentMonthKey,
-      state.coreMonthKey,
-      ...(state.availableMonths || [])
-    ].filter((value) => /^\d{4}-\d{2}$/.test(String(value || ""))))];
-  }
-
   function ensureBar() {
     let bar = document.getElementById("trafficTodayBar");
     if (bar) return bar;
@@ -111,37 +78,6 @@
       (titleRow || title || searchCard.firstElementChild)?.before(bar);
     }
     return bar;
-  }
-
-  async function resolveNames(schedule, attempt = 0) {
-    if (resolving) return;
-    const needed = new Set(schedule.map((item) => item.nameHash).filter((hash) => hash && !nameCache.has(hash)));
-    if (!needed.size) return;
-
-    resolving = true;
-    try {
-      for (const monthKey of availableMonthKeys()) {
-        const roster = window.RoosterMonthBridge?.getRoster?.(monthKey);
-        for (const employee of roster?.employees || []) {
-          const name = String(employee?.name || "").trim();
-          if (!name) continue;
-          const hash = await hashName(name);
-          if (needed.has(hash)) {
-            nameCache.set(hash, name);
-            needed.delete(hash);
-            if (!needed.size) break;
-          }
-        }
-        if (!needed.size) break;
-      }
-    } finally {
-      resolving = false;
-    }
-
-    render();
-    if (needed.size && attempt < 20) {
-      window.setTimeout(() => resolveNames(schedule, attempt + 1), 150);
-    }
   }
 
   function render() {
@@ -163,12 +99,11 @@
       const start = timeToMinutes(item.start);
       const end = timeToMinutes(item.end);
       const isCurrent = Number.isFinite(start) && Number.isFinite(end) && now.minutes >= start && now.minutes < end;
-      const name = nameCache.get(item.nameHash) || "Naam laden…";
       return `
         <span class="traffic-shift${isCurrent ? " is-current" : ""}">
           ${isCurrent ? '<span class="traffic-now">Nu</span>' : ""}
           <span class="traffic-time">${escapeHtml(item.start)}–${escapeHtml(item.end)}</span>
-          <strong>${escapeHtml(name)}</strong>
+          <strong>${escapeHtml(item.name)}</strong>
         </span>`;
     }).join("");
 
@@ -176,8 +111,6 @@
       <span class="traffic-today-title">🚨 Traffic (${escapeHtml(dateLabel)})</span>
       <span class="traffic-today-shifts">${shifts}</span>`;
     bar.hidden = false;
-
-    if (schedule.some((item) => !nameCache.has(item.nameHash))) resolveNames(schedule);
   }
 
   function start() {
