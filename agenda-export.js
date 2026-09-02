@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "20260902-27";
+  const VERSION = "20260902-28";
   const FILE_MONTHS = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
   const MONTH_FILE_RE = /^Roosterindex_(Januari|Februari|Maart|April|Mei|Juni|Juli|Augustus|September|Oktober|November|December)\.json$/i;
 
@@ -103,7 +103,6 @@
   loadStyle("salary-payments.css");
   loadStyle("break-calculator.css");
   loadStyle("personal-month.css");
-  loadStyle("session-timeout.css");
   loadStyle("permission-auth.css");
 
   loadScript("roster-controller.js");
@@ -122,5 +121,4 @@
   loadScript("break-calculator.js");
   loadScript("screenshot-theme.js");
   loadScript("personal-month.js");
-  loadScript("session-timeout.js");
 })();
