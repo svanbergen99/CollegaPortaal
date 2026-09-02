@@ -17,8 +17,13 @@
   font-size: 15px;
   white-space: nowrap;
 }
-.salary-payment-row.salary-payment-past {
-  opacity: .58;
+.salary-history-toggle {
+  width: 100%;
+  margin-top: 14px;
+}
+.salary-history-toggle[aria-pressed="true"] {
+  background: var(--soft-accent);
+  border-color: #bca9ba;
 }
 .salary-payment-row.salary-payment-next {
   border-color: rgba(123, 47, 115, .55);
@@ -42,6 +47,10 @@ html[data-theme="dark"] .next-salary-payment-bar {
   background: rgba(48, 38, 51, .95);
   color: #f0b5e8;
   box-shadow: 0 3px 12px rgba(0, 0, 0, .22);
+}
+html[data-theme="dark"] .salary-history-toggle[aria-pressed="true"] {
+  border-color: #665168;
+  background: #2b202c;
 }
 html[data-theme="dark"] .salary-payment-row.salary-payment-next {
   border-color: #665168;
