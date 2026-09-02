@@ -19,7 +19,7 @@
 body {
   background-color: #0d121a;
   background-image:
-    linear-gradient(rgba(8, 12, 18, .72), rgba(8, 12, 18, .72)),
+    linear-gradient(rgba(8, 12, 18, .60), rgba(8, 12, 18, .60)),
     var(--page-background-image, none);
 }
 
@@ -38,7 +38,7 @@ html[data-theme="dark"] {
 html[data-theme="dark"] body {
   background-color: #0d121a;
   background-image:
-    linear-gradient(rgba(8, 12, 18, .84), rgba(8, 12, 18, .84)),
+    linear-gradient(rgba(8, 12, 18, .60), rgba(8, 12, 18, .60)),
     var(--page-background-image, none);
   color: var(--ink);
 }
