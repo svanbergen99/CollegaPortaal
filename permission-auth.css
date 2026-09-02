@@ -32,6 +32,15 @@ body.permission-auth-enabled .search-message { display: none !important; }
 .permission-auth-back:hover { background: var(--soft-accent); }
 .permission-auth-error { min-height: 20px; margin-top: 12px; color: var(--danger); font-size: 14px; font-weight: 700; }
 .permission-auth-card .full-button { margin-top: 20px; }
+.manager-colleagues-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+.manager-colleague-button {
+  width: 100%;
+  min-height: 46px;
+}
 html[data-theme="dark"] .permission-auth-team-select {
   background: #1c2530;
   color: #f2f4f7;
