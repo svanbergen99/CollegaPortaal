@@ -6,9 +6,10 @@
   const action = document.querySelector(".today-workers-action");
   const todayButton = document.getElementById("whoWorksTodayButton");
   const nowButton = document.getElementById("whoWorksNowButton");
-  if (!rosterResult || !searchCard || !action || !todayButton || !nowButton) return;
+  const salaryButton = document.getElementById("salaryPaymentButton");
+  if (!rosterResult || !searchCard || !action || !todayButton || !nowButton || !salaryButton) return;
 
-  const groupButtons = [todayButton, nowButton];
+  const groupButtons = [todayButton, nowButton, salaryButton];
 
   function closeGroupView() {
     rosterResult.hidden = true;
@@ -20,7 +21,13 @@
   function sync() {
     const header = rosterResult.querySelector(".today-workers-head");
     const title = header?.querySelector("h2")?.textContent?.trim() || "";
-    const activeButton = title === "Wie werkt nu" ? nowButton : title === "Wie werkt vandaag" ? todayButton : null;
+    const activeButton = title === "Wie werkt nu"
+      ? nowButton
+      : title === "Wie werkt vandaag"
+        ? todayButton
+        : title === "Salaris uitbetaling"
+          ? salaryButton
+          : null;
     let closeButton = action.querySelector(".today-workers-close-action");
 
     if (activeButton && !rosterResult.hidden) {
