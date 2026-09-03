@@ -22,13 +22,7 @@
       return;
     }
 
-    if (!style) {
-      style = document.createElement("style");
-      style.id = OVERRIDE_STYLE_ID;
-      document.head.appendChild(style);
-    }
-
-    style.textContent = `
+    const desiredCss = `
 :root[data-rooster-custom-theme="true"] .external-site-link {
   background: ${color} !important;
   border-color: ${color} !important;
@@ -37,6 +31,16 @@
   background: color-mix(in srgb, ${color} 86%, black) !important;
   border-color: color-mix(in srgb, ${color} 86%, black) !important;
 }`;
+
+    if (!style) {
+      style = document.createElement("style");
+      style.id = OVERRIDE_STYLE_ID;
+      style.textContent = desiredCss;
+      document.head.appendChild(style);
+      return;
+    }
+
+    if (style.textContent !== desiredCss) style.textContent = desiredCss;
   }
 
   const observer = new MutationObserver(syncExternalButtons);
