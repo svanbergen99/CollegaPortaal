@@ -4,11 +4,9 @@
   const EFFECTS = [
     { id: "snow", label: "Sneeuw", icon: "❄️" },
     { id: "fireworks", label: "Vuurwerk", icon: "🎆" },
-    { id: "confetti", label: "Confetti", icon: "🎉" },
-    { id: "streamers", label: "Slingers", icon: "🎊" },
+    { id: "birthday", label: "Verjaardag", icon: "🎂" },
     { id: "orange", label: "Oranje feest", icon: "🧡" },
     { id: "hearts", label: "Hartjes", icon: "❤️" },
-    { id: "balloons", label: "Ballonnen", icon: "🎈" },
     { id: "stars", label: "Sterrenregen", icon: "✨" },
     { id: "petals", label: "Bloemblaadjes", icon: "🌸" },
     { id: "easter", label: "Paaseieren", icon: "🐣" },
@@ -268,19 +266,14 @@
         });
         duration = 7600;
         break;
-      case "confetti":
-        sceneGlow = { colors: ["#fffbeb", "#fdf2f8"], strength: .055 };
-        confettiCannons(COLORS, MOBILE() ? 70 : 120);
-        confettiRain(MOBILE() ? 170 : 300, COLORS);
-        addEmitter(1250, 5600, () => confettiCannons(COLORS, MOBILE() ? 42 : 68), false);
-        duration = 7600;
-        break;
-      case "streamers":
-        sceneGlow = { colors: ["#faf5ff", "#eff6ff"], strength: .06 };
-        confettiCannons(COLORS, MOBILE() ? 65 : 110);
-        confettiRain(MOBILE() ? 145 : 245, COLORS, .8);
-        addEmitter(900, 6200, () => confettiRain(MOBILE() ? 28 : 48, COLORS, .16), false);
-        duration = 7900;
+      case "birthday":
+        sceneGlow = { colors: ["#fffbeb", "#fdf2f8", "#eff6ff"], strength: .06 };
+        confettiCannons(COLORS, MOBILE() ? 58 : 92);
+        confettiRain(MOBILE() ? 90 : 145, COLORS, .58);
+        balloons(MOBILE() ? 18 : 30, COLORS);
+        addEmitter(720, 2100, () => confettiRain(MOBILE() ? 12 : 20, COLORS, .12), false);
+        addEmitter(1100, 2100, () => balloons(MOBILE() ? 4 : 7, COLORS), false);
+        duration = 3100;
         break;
       case "orange":
         sceneGlow = { colors: ["#ffedd5", "#fff7ed"], strength: .075 };
@@ -296,12 +289,6 @@
         vectorStars(MOBILE() ? 35 : 60, ["#ffffff", "#f9a8d4", "#fecdd3"], { vyMin: 24, vyMax: 58, sizeMin: 4, sizeMax: 9 });
         addEmitter(1050, 6500, () => hearts(MOBILE() ? 18 : 30), false);
         duration = 8500;
-        break;
-      case "balloons":
-        sceneGlow = { colors: ["#eff6ff", "#fff7ed"], strength: .05 };
-        balloons(MOBILE() ? 48 : 82, COLORS);
-        addEmitter(1350, 6800, () => balloons(MOBILE() ? 12 : 20, COLORS), false);
-        duration = 9300;
         break;
       case "stars":
         sceneGlow = { colors: ["#172554", "#3b0764"], strength: .07 };

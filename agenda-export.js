@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "20260903-60";
+  const VERSION = "20260903-61";
 
   function hasAsset(selector, baseName, attribute) {
     return [...document.querySelectorAll(selector)].some((element) => {
