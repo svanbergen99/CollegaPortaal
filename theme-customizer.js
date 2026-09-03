@@ -197,6 +197,11 @@
     return value || (document.documentElement.dataset.theme === "dark" ? "#EDF2F7" : "#172033");
   }
 
+  function standardForeground(selector, fallback) {
+    const element = document.querySelector(selector);
+    return element ? getComputedStyle(element).color || fallback : fallback;
+  }
+
   function standardBackground(selector, fallback) {
     const element = document.querySelector(selector);
     return element ? getComputedStyle(element).backgroundColor || fallback : fallback;
@@ -206,11 +211,13 @@
     const warning = document.getElementById("themeCustomizerReadability");
     if (!warning) return;
 
-    const text = state.text || standardTextColor();
+    const fallbackText = standardTextColor();
+    const buttonText = state.text || state.accent || standardForeground(".today-workers-button", fallbackText);
+    const barText = state.text || state.accent || standardForeground(".next-salary-payment-bar", fallbackText);
     const buttonBackground = state.buttons || standardBackground(".today-workers-button", document.documentElement.dataset.theme === "dark" ? "#171E29" : "#FFFFFF");
     const barBackground = state.bars || standardBackground(".next-salary-payment-bar", document.documentElement.dataset.theme === "dark" ? "#302633" : "#F4EDF3");
-    const buttonRatio = contrastRatio(text, buttonBackground);
-    const barRatio = contrastRatio(text, barBackground);
+    const buttonRatio = contrastRatio(buttonText, buttonBackground);
+    const barRatio = contrastRatio(barText, barBackground);
     const problems = [];
     if (buttonRatio !== null && buttonRatio < 4.5) problems.push("tekst op knoppen");
     if (barRatio !== null && barRatio < 4.5) problems.push("tekst op balken");
