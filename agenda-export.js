@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "20260903-55";
+  const VERSION = "20260903-56";
 
   function hasAsset(selector, baseName, attribute) {
     return [...document.querySelectorAll(selector)].some((element) => {
@@ -26,14 +26,16 @@
     document.body.appendChild(script);
   }
 
-  /* Openbaar gedeelte: alleen algemene websites en visuele instellingen. */
+  /* Openbaar gedeelte: algemene websites, salarisinfo en visuele instellingen. */
   loadStyle("theme.css");
   loadStyle("theme-customizer.css");
   loadStyle("theme-customizer-colors.css");
   loadStyle("background-contrast.css");
   loadStyle("background-brightness.css");
   loadStyle("external-sites.css");
+  loadStyle("public-salary-payments.css");
   loadStyle("effects.css");
+  loadStyle("holiday-scenes.css");
   loadStyle("visual-audio-controls.css");
   loadStyle("public-portal.css");
 
@@ -42,16 +44,18 @@
   loadScript("theme-background-color.js");
   loadScript("external-theme-buttons.js");
   loadScript("background-brightness.js");
+  loadScript("public-salary-payments.js");
   loadScript("external-sites.js");
   loadScript("external-sites-tweaks.js");
   loadScript("effects.js");
+  loadScript("holiday-scenes.js");
   loadScript("visual-audio-controls.js");
   loadScript("public-portal.js");
 
   /*
     Het afgeschermde roostergedeelte is bewust uitgeschakeld.
-    Daarom worden de modules voor teamkeuze, namen, rooster, Traffic,
-    salaris, pauze, volgende dienst en teamcontacten hier niet geladen.
-    Die kunnen later als afzonderlijk beveiligd gedeelte terugkomen.
+    Modules voor teamkeuze, namen, rooster, Traffic, pauze,
+    volgende dienst en teamcontacten worden hier niet geladen.
+    Salarisdata staat los van het rooster en is daarom openbaar beschikbaar.
   */
 })();
