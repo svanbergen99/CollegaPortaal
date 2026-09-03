@@ -1,0 +1,47 @@
+.background-brightness-bar {
+  display: grid;
+  grid-template-columns: auto minmax(160px, 1fr) 52px;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 11px 14px;
+  border: 1px solid rgba(255, 255, 255, .34);
+  border-radius: 12px;
+  background: rgba(20, 27, 37, .72);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, .08);
+  backdrop-filter: blur(5px);
+}
+
+.background-brightness-label {
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.background-brightness-slider {
+  width: 100%;
+  min-width: 0;
+  accent-color: #f0b5e8;
+  cursor: pointer;
+}
+
+.background-brightness-value {
+  min-width: 52px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 620px) {
+  .background-brightness-bar {
+    grid-template-columns: 1fr auto;
+    gap: 8px 10px;
+  }
+
+  .background-brightness-slider {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
