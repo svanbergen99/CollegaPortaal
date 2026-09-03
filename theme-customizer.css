@@ -1,6 +1,6 @@
 .theme-customizer-shell {
   position: fixed;
-  top: 64px;
+  top: 114px;
   right: 14px;
   z-index: 92;
   display: flex;
@@ -34,7 +34,7 @@
 
 .theme-customizer-panel {
   width: min(370px, calc(100vw - 28px));
-  max-height: calc(100vh - 120px);
+  max-height: calc(100vh - 170px);
   overflow: auto;
   padding: 15px;
   border: 1px solid #d7ccd5;
@@ -226,7 +226,7 @@ html[data-theme="dark"] .theme-customizer-save input {
 
 @media (max-width: 620px) {
   .theme-customizer-shell {
-    top: 52px;
+    top: 96px;
     right: 8px;
   }
   .theme-customizer-button {
@@ -236,7 +236,7 @@ html[data-theme="dark"] .theme-customizer-save input {
   }
   .theme-customizer-panel {
     width: min(350px, calc(100vw - 16px));
-    max-height: calc(100vh - 100px);
+    max-height: calc(100vh - 144px);
   }
   .theme-customizer-save-row { grid-template-columns: 1fr; }
 }
