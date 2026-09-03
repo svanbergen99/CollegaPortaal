@@ -8,6 +8,11 @@
     "2026-09-02": Object.freeze([
       Object.freeze({ start: "08:00", end: "13:00", name: "Marjan van Staalduinen" }),
       Object.freeze({ start: "13:00", end: "18:00", name: "Hendrik Steenhouwer" })
+    ]),
+    "2026-09-03": Object.freeze([
+      Object.freeze({ start: "00:00", end: "12:00", label: "tot 12:00", name: "Hendrik Steenhouwer" }),
+      Object.freeze({ start: "12:00", end: "15:00", name: "Ewoud Oord" }),
+      Object.freeze({ start: "15:00", end: "sluit", label: "15:00–sluit", name: "Maaike Overweg" })
     ])
   });
 
@@ -56,7 +61,9 @@
   }
 
   function timeToMinutes(value) {
-    const match = String(value || "").match(/^(\d{1,2}):(\d{2})$/);
+    const text = String(value || "").trim().toLocaleLowerCase("nl-NL");
+    if (text === "sluit") return 24 * 60;
+    const match = text.match(/^(\d{1,2}):(\d{2})$/);
     if (!match) return NaN;
     return Number(match[1]) * 60 + Number(match[2]);
   }
@@ -99,10 +106,11 @@
       const start = timeToMinutes(item.start);
       const end = timeToMinutes(item.end);
       const isCurrent = Number.isFinite(start) && Number.isFinite(end) && now.minutes >= start && now.minutes < end;
+      const timeLabel = item.label || `${item.start}–${item.end}`;
       return `
         <span class="traffic-shift${isCurrent ? " is-current" : ""}">
           ${isCurrent ? '<span class="traffic-now">Nu</span>' : ""}
-          <span class="traffic-time">${escapeHtml(item.start)}–${escapeHtml(item.end)}</span>
+          <span class="traffic-time">${escapeHtml(timeLabel)}</span>
           <strong>${escapeHtml(item.name)}</strong>
         </span>`;
     }).join("");
