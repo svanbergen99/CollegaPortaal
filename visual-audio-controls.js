@@ -38,17 +38,8 @@
     if (themeButton.parentElement !== buttons) buttons.appendChild(themeButton);
     if (effectsWrap.parentElement !== buttons) buttons.appendChild(effectsWrap);
 
-    let audioButton = document.getElementById("audioSettingsButton");
-    if (!audioButton) {
-      audioButton = document.createElement("button");
-      audioButton.id = "audioSettingsButton";
-      audioButton.className = "audio-placeholder-button";
-      audioButton.type = "button";
-      audioButton.textContent = "Audio";
-      audioButton.setAttribute("aria-disabled", "true");
-      audioButton.title = "Audio-instellingen worden mogelijk later toegevoegd.";
-      buttons.appendChild(audioButton);
-    }
+    document.getElementById("audioSettingsButton")?.remove();
+    document.getElementById("audioPreviewPanel")?.remove();
 
     themeButton.addEventListener("click", closeEffectsMenu);
     document.getElementById("effectsButton")?.addEventListener("click", closeThemePanel);
