@@ -5,8 +5,7 @@
   const MAX_BRIGHTNESS = 100;
   const DEFAULT_BRIGHTNESS = 18;
   const app = document.getElementById("app");
-  const searchCard = document.querySelector(".search-card");
-  if (!app || !searchCard) return;
+  if (!app) return;
 
   let userAdjusted = false;
 
@@ -32,6 +31,23 @@
     if (slider && Number(slider.value) !== brightness) slider.value = String(brightness);
   }
 
+  function closePanel() {
+    const panel = document.getElementById("backgroundBrightnessPanel");
+    const button = document.getElementById("backgroundBrightnessButton");
+    if (!panel || !button) return;
+    panel.hidden = true;
+    button.setAttribute("aria-expanded", "false");
+  }
+
+  function togglePanel() {
+    const panel = document.getElementById("backgroundBrightnessPanel");
+    const button = document.getElementById("backgroundBrightnessButton");
+    if (!panel || !button) return;
+    const open = panel.hidden;
+    panel.hidden = !open;
+    button.setAttribute("aria-expanded", String(open));
+  }
+
   function ensureControl() {
     let control = document.getElementById("backgroundBrightnessBar");
     if (control) return control;
@@ -39,27 +55,39 @@
     const brightness = brightnessFromCurrentOverlay();
     control = document.createElement("div");
     control.id = "backgroundBrightnessBar";
-    control.className = "background-brightness-bar";
+    control.className = "background-brightness-shell";
     control.innerHTML = `
-      <label class="background-brightness-label" for="backgroundBrightnessSlider">Achtergrond helderheid</label>
-      <input class="background-brightness-slider" id="backgroundBrightnessSlider" type="range" min="1" max="100" step="1" value="${brightness}" aria-label="Achtergrond helderheid van 1 tot 100 procent">
-      <output class="background-brightness-value" id="backgroundBrightnessValue" for="backgroundBrightnessSlider">${brightness}%</output>`;
+      <button class="background-brightness-button" id="backgroundBrightnessButton" type="button" aria-expanded="false" aria-controls="backgroundBrightnessPanel">Achtergrond Helderheid</button>
+      <div class="background-brightness-panel" id="backgroundBrightnessPanel" hidden>
+        <div class="background-brightness-control">
+          <label class="background-brightness-label" for="backgroundBrightnessSlider">Helderheid achtergrond</label>
+          <output class="background-brightness-value" id="backgroundBrightnessValue" for="backgroundBrightnessSlider">${brightness}%</output>
+          <input class="background-brightness-slider" id="backgroundBrightnessSlider" type="range" min="1" max="100" step="1" value="${brightness}" aria-label="Achtergrond helderheid van 1 tot 100 procent">
+        </div>
+      </div>`;
 
-    const teamContactsBar = document.getElementById("teamContactsBar");
-    const nextShiftBar = document.getElementById("nextShiftBar");
-    const salaryBar = document.getElementById("nextSalaryPaymentBar");
-    if (teamContactsBar) teamContactsBar.after(control);
-    else if (nextShiftBar) nextShiftBar.after(control);
-    else if (salaryBar) salaryBar.after(control);
-    else {
-      const titleRow = searchCard.querySelector(".roster-title-row");
-      const title = searchCard.querySelector(":scope > h1");
-      (titleRow || title || searchCard.firstElementChild)?.before(control);
-    }
+    app.appendChild(control);
+
+    control.querySelector("#backgroundBrightnessButton")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      togglePanel();
+    });
+
+    control.querySelector("#backgroundBrightnessPanel")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+    });
 
     control.querySelector("#backgroundBrightnessSlider")?.addEventListener("input", (event) => {
       userAdjusted = true;
       applyBrightness(event.currentTarget.value);
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!control.contains(event.target)) closePanel();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closePanel();
     });
 
     return control;
@@ -68,8 +96,6 @@
   function render() {
     if (app.hidden) return;
     const control = ensureControl();
-    const teamContactsBar = document.getElementById("teamContactsBar");
-    if (teamContactsBar && teamContactsBar.nextElementSibling !== control) teamContactsBar.after(control);
     control.hidden = false;
   }
 
