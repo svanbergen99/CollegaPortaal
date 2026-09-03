@@ -30,6 +30,18 @@
   font-size: 14px;
 }
 
+.team-contact-person-text {
+  min-width: 0;
+}
+
+.team-contact-presence {
+  display: inline-block;
+  margin-left: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: .76;
+}
+
 .team-contact-medal {
   flex: 0 0 auto;
   font-size: 17px;
@@ -94,5 +106,10 @@ html[data-theme="dark"] .team-contact-button:hover:not(:disabled) {
   .team-contact-actions {
     justify-content: flex-start;
     padding-left: 25px;
+  }
+
+  .team-contact-presence {
+    display: block;
+    margin: 3px 0 0;
   }
 }
