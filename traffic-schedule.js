@@ -6,13 +6,13 @@
 
   const SCHEDULES = Object.freeze({
     "2026-09-02": Object.freeze([
-      Object.freeze({ start: "08:00", end: "13:00", name: "Marjan van Staalduinen" }),
-      Object.freeze({ start: "13:00", end: "18:00", name: "Hendrik Steenhouwer" })
+      Object.freeze({ start: "start", end: "13:00", name: "Marjan van Staalduinen" }),
+      Object.freeze({ start: "13:00", end: "sluit", name: "Hendrik Steenhouwer" })
     ]),
     "2026-09-03": Object.freeze([
-      Object.freeze({ start: "00:00", end: "12:00", label: "tot 12:00", name: "Hendrik Steenhouwer" }),
+      Object.freeze({ start: "start", end: "12:00", name: "Hendrik Steenhouwer" }),
       Object.freeze({ start: "12:00", end: "15:00", name: "Ewoud Oord" }),
-      Object.freeze({ start: "15:00", end: "sluit", label: "15:00–sluit", name: "Maaike Overweg" })
+      Object.freeze({ start: "15:00", end: "sluit", name: "Maaike Overweg" })
     ])
   });
 
@@ -60,9 +60,24 @@
     }).format(date);
   }
 
-  function timeToMinutes(value) {
+  function businessHours(dateKey) {
+    const date = new Date(`${dateKey}T12:00:00Z`);
+    const weekday = date.getUTCDay();
+    if (weekday === 6) return { start: "09:00", close: "16:30" };
+    if (weekday >= 1 && weekday <= 5) return { start: "08:00", close: "18:00" };
+    return { start: "", close: "" };
+  }
+
+  function resolveTime(value, dateKey) {
     const text = String(value || "").trim().toLocaleLowerCase("nl-NL");
-    if (text === "sluit") return 24 * 60;
+    const hours = businessHours(dateKey);
+    if (text === "start") return hours.start;
+    if (text === "sluit") return hours.close;
+    return text;
+  }
+
+  function timeToMinutes(value, dateKey) {
+    const text = resolveTime(value, dateKey);
     const match = text.match(/^(\d{1,2}):(\d{2})$/);
     if (!match) return NaN;
     return Number(match[1]) * 60 + Number(match[2]);
@@ -103,10 +118,12 @@
     }
 
     const shifts = schedule.map((item) => {
-      const start = timeToMinutes(item.start);
-      const end = timeToMinutes(item.end);
+      const startLabel = resolveTime(item.start, now.dateKey);
+      const endLabel = resolveTime(item.end, now.dateKey);
+      const start = timeToMinutes(item.start, now.dateKey);
+      const end = timeToMinutes(item.end, now.dateKey);
       const isCurrent = Number.isFinite(start) && Number.isFinite(end) && now.minutes >= start && now.minutes < end;
-      const timeLabel = item.label || `${item.start}–${item.end}`;
+      const timeLabel = startLabel && endLabel ? `${startLabel}–${endLabel}` : `${item.start}–${item.end}`;
       return `
         <span class="traffic-shift${isCurrent ? " is-current" : ""}">
           ${isCurrent ? '<span class="traffic-now">Nu</span>' : ""}
