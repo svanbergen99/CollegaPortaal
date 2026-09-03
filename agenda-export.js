@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "20260903-53";
+  const VERSION = "20260903-54";
 
   function hasAsset(selector, baseName, attribute) {
     return [...document.querySelectorAll(selector)].some((element) => {
@@ -35,6 +35,7 @@
   loadStyle("external-sites.css");
   loadStyle("effects.css");
   loadStyle("visual-audio-controls.css");
+  loadStyle("audio-preview.css");
   loadStyle("public-portal.css");
 
   loadScript("theme.js");
@@ -46,6 +47,7 @@
   loadScript("external-sites-tweaks.js");
   loadScript("effects.js");
   loadScript("visual-audio-controls.js");
+  loadScript("audio-preview.js");
   loadScript("public-portal.js");
 
   /*
