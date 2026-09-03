@@ -39,6 +39,8 @@ html:root[data-rooster-custom-theme="true"] body #app .activity,
 html:root[data-rooster-custom-theme="true"] body #app .today-worker-row,
 html:root[data-rooster-custom-theme="true"] body #app .personal-month-calendar,
 html:root[data-rooster-custom-theme="true"] body #app .external-sites-card,
+html:root[data-rooster-custom-theme="true"] body #app .public-salary-panel,
+html:root[data-rooster-custom-theme="true"] body #app .public-salary-row,
 html:root[data-rooster-custom-theme="true"] body .agenda-help-card,
 html:root[data-rooster-custom-theme="true"] body .screenshot-calendar-card {
   background: ${color} !important;
