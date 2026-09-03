@@ -1,10 +1,11 @@
 (() => {
   "use strict";
 
+  const EMAIL_DOMAIN = "centraalbeheer.nl";
   const CONTACTS = Object.freeze([
-    Object.freeze({ medal: "🥇", role: "Teamleider", name: "Rianne Mast-Wolf", email: "" }),
-    Object.freeze({ medal: "🥈", role: "Senior", name: "Elvis Nieuwland", email: "" }),
-    Object.freeze({ medal: "🥈", role: "Senior", name: "Timo Geerdink", email: "" })
+    Object.freeze({ medal: "🥇", role: "Teamleider", name: "Rianne Mast-Wolf" }),
+    Object.freeze({ medal: "🥈", role: "Senior", name: "Elvis Nieuwland" }),
+    Object.freeze({ medal: "🥈", role: "Senior", name: "Timo Geerdink" })
   ]);
 
   const app = document.getElementById("app");
@@ -20,8 +21,19 @@
       .replaceAll("'", "&#039;");
   }
 
+  function emailFromName(name) {
+    const localPart = String(name || "")
+      .trim()
+      .toLocaleLowerCase("nl-NL")
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "")
+      .replace(/[^a-z0-9-]+/g, ".")
+      .replace(/^\.+|\.+$/g, "")
+      .replace(/\.{2,}/g, ".");
+    return localPart ? `${localPart}@${EMAIL_DOMAIN}` : "";
+  }
+
   function contactHtml(contact) {
-    const hasEmail = Boolean(String(contact.email || "").trim());
     return `
       <div class="team-contact-row">
         <div class="team-contact-person">
@@ -29,8 +41,8 @@
           <span><strong>${escapeHtml(contact.role)}:</strong> ${escapeHtml(contact.name)}</span>
         </div>
         <div class="team-contact-actions">
-          <button class="team-contact-button" type="button" data-contact-action="chat" data-contact-name="${escapeHtml(contact.name)}"${hasEmail ? "" : " disabled"}>Stuur Chat</button>
-          <button class="team-contact-button" type="button" data-contact-action="email" data-contact-name="${escapeHtml(contact.name)}"${hasEmail ? "" : " disabled"}>Stuur E-Mail</button>
+          <button class="team-contact-button" type="button" data-contact-action="chat" data-contact-name="${escapeHtml(contact.name)}">Stuur Chat</button>
+          <button class="team-contact-button" type="button" data-contact-action="email" data-contact-name="${escapeHtml(contact.name)}">Stuur E-Mail</button>
         </div>
       </div>`;
   }
@@ -56,10 +68,10 @@
     }
 
     bar.querySelectorAll(".team-contact-button").forEach((button) => {
-      const contact = CONTACTS.find((item) => item.name === button.dataset.contactName);
-      const email = String(contact?.email || "").trim();
+      const email = emailFromName(button.dataset.contactName);
       if (!email) {
-        button.title = "Nog niet actief: e-mailadres is nog niet gekoppeld.";
+        button.disabled = true;
+        button.title = "E-mailadres kon niet uit de naam worden opgebouwd.";
         return;
       }
 
@@ -69,7 +81,7 @@
           window.open(teamsUrl, "_blank", "noopener,noreferrer");
           return;
         }
-        window.location.href = `mailto:${encodeURIComponent(email)}`;
+        window.location.href = `mailto:${email}`;
       });
     });
 
