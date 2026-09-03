@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "20260903-45";
+  const VERSION = "20260903-46";
   const FILE_MONTHS = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
   const MONTH_FILE_RE = /^Roosterindex_(Januari|Februari|Maart|April|Mei|Juni|Juli|Augustus|September|Oktober|November|December)\.json$/i;
 
@@ -99,6 +99,7 @@
 
   loadStyle("theme.css");
   loadStyle("background-contrast.css");
+  loadStyle("background-brightness.css");
   loadStyle("roster-extras.css");
   loadStyle("salary-payments.css");
   loadStyle("team-contacts.css");
@@ -116,6 +117,7 @@
   loadScript("annual-archive.js");
   loadScript("timezone-background.js");
   loadScript("theme.js");
+  loadScript("background-brightness.js");
   loadScript("agenda-export-core.js");
   loadScript("agenda-timezone.js");
   loadScript("sunday-dayoff.js");
@@ -128,4 +130,5 @@
   loadScript("screenshot-theme.js");
   loadScript("personal-month.js");
   loadScript("external-sites.js");
+  loadScript("external-sites-tweaks.js");
 })();
