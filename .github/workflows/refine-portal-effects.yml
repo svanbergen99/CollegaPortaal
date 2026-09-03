@@ -1,0 +1,256 @@
+name: Refine portal effects
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  refine-effects:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refine effects and static holiday scenes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'{label}: verwachte tekst niet gevonden')
+              return text.replace(old, new, 1)
+
+          # 1) Lichtere, kortere effecten-engine.
+          effects_path = Path('effects.js')
+          effects = effects_path.read_text(encoding='utf-8')
+          effects = replace_once(
+              effects,
+              '  const CAP = () => MOBILE() ? 520 : 920;',
+              '  const CAP = () => MOBILE() ? 220 : 360;',
+              'particle cap'
+          )
+          effects = replace_once(
+              effects,
+              '  let sceneGlow = null;\n  let effectsMenu = null;',
+              '  let sceneGlow = null;\n  let fadeTimer = 0;\n  let hardStopTimer = 0;\n  let effectsMenu = null;',
+              'effect timers'
+          )
+          effects = replace_once(
+              effects,
+              '''  function push(particle) {\n    if (particles.length >= CAP()) return;\n    particle.px = particle.x;\n    particle.py = particle.y;\n    particles.push(particle);\n  }''',
+              '''  function push(particle) {\n    if (particles.length >= CAP()) return;\n    // Minder deeltjes, maar iets sneller bewegen: dezelfde impact met veel minder renderwerk.\n    if (["confetti", "ribbon", "snow", "emoji", "star", "petal"].includes(particle.kind) && particle.vy > 0) {\n      particle.vy *= 1.32;\n      particle.gravity *= 1.08;\n    }\n    particle.px = particle.x;\n    particle.py = particle.y;\n    particles.push(particle);\n  }''',
+              'push performance tuning'
+          )
+          effects = replace_once(
+              effects,
+              '''  function addEmitter(interval, duration, fn, immediate = true) {\n    emitters.push({ interval, until: startedAt + duration, next: startedAt + (immediate ? 0 : interval), fn });\n  }''',
+              '''  function addEmitter(interval, duration, fn, immediate = true) {\n    const compactInterval = Math.max(260, interval * .78);\n    emitters.push({\n      interval: compactInterval,\n      until: Math.min(startedAt + duration, startedAt + 2200),\n      next: startedAt + (immediate ? 0 : compactInterval),\n      fn\n    });\n  }''',
+              'compact emitters'
+          )
+          effects = replace_once(
+              effects,
+              '''  function stopEffect() {\n    emitters = [];\n    particles = [];\n    startedAt = 0;\n    endAt = 0;\n    sceneGlow = null;\n    if (animationFrame) cancelAnimationFrame(animationFrame);\n    animationFrame = 0;\n    if (ctx) ctx.clearRect(0, 0, innerWidth, innerHeight);\n  }''',
+              '''  function stopEffect() {\n    window.clearTimeout(fadeTimer);\n    window.clearTimeout(hardStopTimer);\n    fadeTimer = 0;\n    hardStopTimer = 0;\n    emitters = [];\n    particles = [];\n    startedAt = 0;\n    endAt = 0;\n    sceneGlow = null;\n    if (animationFrame) cancelAnimationFrame(animationFrame);\n    animationFrame = 0;\n    if (canvas) canvas.style.opacity = "0";\n    if (ctx) ctx.clearRect(0, 0, innerWidth, innerHeight);\n  }''',
+              'stop effect timers'
+          )
+          effects = replace_once(
+              effects,
+              '''  function startEffect(type) {\n    if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) return;\n    stopEffect();\n    ensureCanvas();\n    resizeCanvas();\n    const duration = scene(type);\n    if (!duration) return;\n    endAt = startedAt + duration;\n    lastTime = performance.now();\n    animationFrame = requestAnimationFrame(animate);\n  }''',
+              '''  function startEffect(type) {\n    if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) return;\n    stopEffect();\n    ensureCanvas();\n    resizeCanvas();\n    canvas.style.opacity = "0";\n    const duration = scene(type);\n    if (!duration) return;\n    endAt = startedAt + Math.min(duration, 3100);\n    lastTime = performance.now();\n    requestAnimationFrame(() => { if (canvas) canvas.style.opacity = "1"; });\n    fadeTimer = window.setTimeout(() => {\n      emitters = [];\n      if (canvas) canvas.style.opacity = "0";\n    }, 2550);\n    hardStopTimer = window.setTimeout(stopEffect, 3100);\n    animationFrame = requestAnimationFrame(animate);\n  }''',
+              'three second effects'
+          )
+          effects_path.write_text(effects, encoding='utf-8')
+
+          # 2) Canvas zacht laten uitfaden.
+          effects_css_path = Path('effects.css')
+          effects_css = effects_css_path.read_text(encoding='utf-8')
+          effects_css = replace_once(
+              effects_css,
+              '''  height: 100vh;\n  pointer-events: none;\n}''',
+              '''  height: 100vh;\n  pointer-events: none;\n  opacity: 0;\n  transition: opacity .5s ease;\n  will-change: opacity;\n}''',
+              'canvas fade css'
+          )
+          effects_css_path.write_text(effects_css, encoding='utf-8')
+
+          # 3) Onder-scene wordt permanente zijdecoratie en start automatisch bij openen.
+          holiday_path = Path('holiday-scenes.js')
+          holiday = holiday_path.read_text(encoding='utf-8')
+          tail_pattern = re.compile(r'\n  function removeScene\(\) \{[\s\S]*?\n\}\)\(\);\s*$', re.M)
+          new_tail = r'''
+  const THEME_TO_SCENE = Object.freeze({
+    Nieuwjaar: "fireworks",
+    Valentijnsdag: "hearts",
+    Pasen: "easter",
+    Koningsdag: "orange",
+    Moederdag: "hearts",
+    Vaderdag: "hearts",
+    Suikerfeest: "eid",
+    Halloween: "halloween",
+    Sinterklaas: "sinterklaas",
+    Kerst: "christmas",
+    Oudjaar: "fireworks"
+  });
+
+  function removeScene() {
+    document.getElementById("holidaySceneOverlay")?.remove();
+  }
+
+  function showStaticScene(type) {
+    const factory = SCENES[type];
+    if (!factory) return;
+
+    let overlay = document.getElementById("holidaySceneOverlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "holidaySceneOverlay";
+      overlay.className = "holiday-scene-overlay";
+      overlay.setAttribute("aria-hidden", "true");
+      document.body.appendChild(overlay);
+    }
+
+    if (overlay.dataset.scene === type) return;
+    overlay.dataset.scene = type;
+    const sceneMarkup = factory();
+    overlay.innerHTML = `
+      <div class="holiday-scene-side holiday-scene-side-left">
+        <div class="holiday-scene-static-stage">${sceneMarkup}</div>
+      </div>
+      <div class="holiday-scene-side holiday-scene-side-right">
+        <div class="holiday-scene-static-stage">${sceneMarkup}</div>
+      </div>`;
+  }
+
+  function automaticSceneType() {
+    return THEME_TO_SCENE[document.body.dataset.backgroundTheme || ""] || "";
+  }
+
+  function applyAutomaticHolidayScene(animate = false) {
+    const type = automaticSceneType();
+    if (!type) {
+      removeScene();
+      return;
+    }
+    showStaticScene(type);
+    if (animate) window.RoosterEffects?.start?.(type);
+  }
+
+  // Handmatig gekozen feestdagen houden hun herkenbare zijdecoratie vast.
+  // Het canvas-effect zelf wordt door effects.js afgehandeld en duurt circa 3 seconden.
+  document.addEventListener("click", (event) => {
+    const item = event.target.closest?.("[data-effect]");
+    if (!item) return;
+    const effect = item.dataset.effect;
+    if (effect && effect !== "stop" && SCENES[effect]) showStaticScene(effect);
+  });
+
+  // Zodra 'Verder' de openbare startpagina opent, speelt het bijpassende
+  // feestdageffect één keer kort af. De vaste decoratie blijft daarna staan.
+  window.addEventListener("rooster-unlocked", () => {
+    requestAnimationFrame(() => applyAutomaticHolidayScene(true));
+  });
+
+  const app = document.getElementById("app");
+  if (app && !app.hidden) applyAutomaticHolidayScene(false);
+})();
+'''
+          holiday, count = tail_pattern.subn(lambda m: '\n' + new_tail.lstrip('\n'), holiday, count=1)
+          if count != 1:
+              raise SystemExit('holiday-scenes tail kon niet worden vervangen')
+          holiday_path.write_text(holiday, encoding='utf-8')
+
+          # 4) Statische zijdecoratie: buiten de centrale portalkaart, zonder continue animaties.
+          holiday_css = r'''.holiday-scene-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.holiday-scene-side {
+  position: absolute;
+  bottom: 0;
+  width: max(0px, calc((100vw - 900px) / 2));
+  height: min(34vh, 285px);
+  overflow: hidden;
+  opacity: .98;
+}
+
+.holiday-scene-side-left { left: 0; }
+.holiday-scene-side-right { right: 0; }
+
+.holiday-scene-static-stage {
+  position: absolute;
+  bottom: 0;
+  width: min(500px, 43vw);
+  min-width: 390px;
+  height: 100%;
+}
+
+.holiday-scene-side-left .holiday-scene-static-stage {
+  right: -105px;
+  transform: scaleX(-1);
+  transform-origin: 50% 100%;
+}
+
+.holiday-scene-side-right .holiday-scene-static-stage {
+  left: -105px;
+}
+
+.holiday-scene-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 12px 18px rgba(15,23,42,.16));
+}
+
+/* De vaste illustraties blijven echt vast: geen voortdurende bob/sway/twinkle animaties. */
+.holiday-scene-overlay .scene-gentle-sway,
+.holiday-scene-overlay .scene-gentle-bob,
+.holiday-scene-overlay .scene-horse-bob,
+.holiday-scene-overlay .scene-flower-sway,
+.holiday-scene-overlay .scene-lantern-sway,
+.holiday-scene-overlay .scene-star-twinkle,
+.holiday-scene-overlay .scene-pumpkin-glow,
+.holiday-scene-overlay .scene-light {
+  animation: none !important;
+}
+
+@media (max-width: 1180px) {
+  .holiday-scene-overlay { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .holiday-scene-overlay { display: none !important; }
+}
+'''
+          Path('holiday-scenes.css').write_text(holiday_css, encoding='utf-8')
+
+          # 5) Cacheversie verhogen en loader zelf ook cache-busten.
+          agenda_path = Path('agenda-export.js')
+          agenda = agenda_path.read_text(encoding='utf-8')
+          agenda = replace_once(agenda, 'const VERSION = "20260903-58";', 'const VERSION = "20260903-59";', 'loader version')
+          agenda_path.write_text(agenda, encoding='utf-8')
+
+          index_path = Path('index.html')
+          index = index_path.read_text(encoding='utf-8')
+          index = re.sub(r'<script src="agenda-export\.js(?:\?v=[^"]+)?"></script>', '<script src="agenda-export.js?v=20260903-59"></script>', index, count=1)
+          index_path.write_text(index, encoding='utf-8')
+          PY
+
+          node --check effects.js
+          node --check holiday-scenes.js
+
+      - name: Commit refinement
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add effects.js effects.css holiday-scenes.js holiday-scenes.css agenda-export.js index.html
+          git commit -m "Refine portal effects performance and holiday layout"
+          git push
