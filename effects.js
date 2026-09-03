@@ -29,7 +29,7 @@
   const EID = ["#0f766e", "#14b8a6", "#f4c95d", "#fff4c2", "#ffffff"];
 
   const MOBILE = () => window.innerWidth < 680;
-  const CAP = () => MOBILE() ? 520 : 920;
+  const CAP = () => MOBILE() ? 220 : 360;
 
   let canvas = null;
   let ctx = null;
@@ -40,6 +40,8 @@
   let endAt = 0;
   let lastTime = 0;
   let sceneGlow = null;
+  let fadeTimer = 0;
+  let hardStopTimer = 0;
   let effectsMenu = null;
   let effectsButton = null;
 
@@ -84,13 +86,23 @@
 
   function push(particle) {
     if (particles.length >= CAP()) return;
+    if (["confetti", "ribbon", "snow", "emoji", "star", "petal"].includes(particle.kind) && particle.vy > 0) {
+      particle.vy *= 1.32;
+      particle.gravity *= 1.08;
+    }
     particle.px = particle.x;
     particle.py = particle.y;
     particles.push(particle);
   }
 
   function addEmitter(interval, duration, fn, immediate = true) {
-    emitters.push({ interval, until: startedAt + duration, next: startedAt + (immediate ? 0 : interval), fn });
+    const compactInterval = Math.max(260, interval * .78);
+    emitters.push({
+      interval: compactInterval,
+      until: Math.min(startedAt + duration, startedAt + 2200),
+      next: startedAt + (immediate ? 0 : compactInterval),
+      fn
+    });
   }
 
   function confettiRain(count, palette = COLORS, ySpread = 0.7) {
@@ -563,6 +575,10 @@
   }
 
   function stopEffect() {
+    window.clearTimeout(fadeTimer);
+    window.clearTimeout(hardStopTimer);
+    fadeTimer = 0;
+    hardStopTimer = 0;
     emitters = [];
     particles = [];
     startedAt = 0;
@@ -570,6 +586,7 @@
     sceneGlow = null;
     if (animationFrame) cancelAnimationFrame(animationFrame);
     animationFrame = 0;
+    if (canvas) canvas.style.opacity = "0";
     if (ctx) ctx.clearRect(0, 0, innerWidth, innerHeight);
   }
 
@@ -578,10 +595,17 @@
     stopEffect();
     ensureCanvas();
     resizeCanvas();
+    canvas.style.opacity = "0";
     const duration = scene(type);
     if (!duration) return;
-    endAt = startedAt + duration;
+    endAt = startedAt + Math.min(duration, 3100);
     lastTime = performance.now();
+    requestAnimationFrame(() => { if (canvas) canvas.style.opacity = "1"; });
+    fadeTimer = window.setTimeout(() => {
+      emitters = [];
+      if (canvas) canvas.style.opacity = "0";
+    }, 2550);
+    hardStopTimer = window.setTimeout(stopEffect, 3100);
     animationFrame = requestAnimationFrame(animate);
   }
 

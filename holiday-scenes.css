@@ -1,63 +1,61 @@
 .holiday-scene-overlay {
   position: fixed;
-  inset: auto 0 0;
-  z-index: 9998;
-  height: min(36vh, 310px);
-  min-height: 190px;
+  inset: 0;
+  z-index: 8;
   pointer-events: none;
-  opacity: 0;
-  transform: translateY(34px) scale(.985);
-  transform-origin: 50% 100%;
-  transition: opacity .55s ease, transform .7s cubic-bezier(.2,.78,.25,1);
   overflow: hidden;
 }
 
-.holiday-scene-overlay.is-visible {
-  opacity: 1;
-  transform: translateY(0) scale(1);
+.holiday-scene-side {
+  position: absolute;
+  bottom: 0;
+  width: max(0px, calc((100vw - 900px) / 2));
+  height: min(34vh, 285px);
+  overflow: hidden;
+  opacity: .98;
 }
 
-.holiday-scene-overlay.is-leaving {
-  opacity: 0;
-  transform: translateY(40px) scale(.985);
-}
+.holiday-scene-side-left { left: 0; }
+.holiday-scene-side-right { right: 0; }
 
-.holiday-scene-stage,
-.holiday-scene-svg {
-  width: 100%;
+.holiday-scene-static-stage {
+  position: absolute;
+  bottom: 0;
+  width: min(500px, 43vw);
+  min-width: 390px;
   height: 100%;
+}
+
+.holiday-scene-side-left .holiday-scene-static-stage {
+  right: -105px;
+  transform: scaleX(-1);
+  transform-origin: 50% 100%;
+}
+
+.holiday-scene-side-right .holiday-scene-static-stage {
+  left: -105px;
 }
 
 .holiday-scene-svg {
   display: block;
-  filter: drop-shadow(0 14px 22px rgba(15,23,42,.18));
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 12px 18px rgba(15,23,42,.16));
 }
 
-/* SVG-groepen houden hun vaste transform/positie. De subtiele beweging gebeurt via licht en opacity. */
-.scene-gentle-sway,
-.scene-gentle-bob,
-.scene-horse-bob,
-.scene-flower-sway,
-.scene-lantern-sway {
-  animation: sceneSoftPulse 2.2s ease-in-out infinite alternate;
+.holiday-scene-overlay .scene-gentle-sway,
+.holiday-scene-overlay .scene-gentle-bob,
+.holiday-scene-overlay .scene-horse-bob,
+.holiday-scene-overlay .scene-flower-sway,
+.holiday-scene-overlay .scene-lantern-sway,
+.holiday-scene-overlay .scene-star-twinkle,
+.holiday-scene-overlay .scene-pumpkin-glow,
+.holiday-scene-overlay .scene-light {
+  animation: none !important;
 }
 
-.scene-star-twinkle { animation: sceneTwinkle 1.35s ease-in-out infinite alternate; }
-.scene-pumpkin-glow { animation: scenePumpkinGlow 1.8s ease-in-out infinite alternate; }
-.scene-light { animation: sceneLight 1.2s ease-in-out infinite alternate; }
-.scene-light-1 { animation-delay: .35s; }
-.scene-light-2 { animation-delay: .7s; }
-
-@keyframes sceneSoftPulse { from { opacity: .94; } to { opacity: 1; } }
-@keyframes sceneTwinkle { from { opacity: .45; } to { opacity: 1; } }
-@keyframes scenePumpkinGlow { from { filter: drop-shadow(0 0 2px rgba(249,115,22,.25)); } to { filter: drop-shadow(0 0 12px rgba(249,115,22,.65)); } }
-@keyframes sceneLight { from { opacity: .48; } to { opacity: 1; filter: drop-shadow(0 0 7px currentColor); } }
-
-@media (max-width: 680px) {
-  .holiday-scene-overlay {
-    height: min(31vh, 235px);
-    min-height: 150px;
-  }
+@media (max-width: 1180px) {
+  .holiday-scene-overlay { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

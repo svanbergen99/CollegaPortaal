@@ -132,47 +132,74 @@
     `, "scene-hearts")
   };
 
+  const THEME_TO_SCENE = Object.freeze({
+    Nieuwjaar: "fireworks",
+    Valentijnsdag: "hearts",
+    Pasen: "easter",
+    Koningsdag: "orange",
+    Moederdag: "hearts",
+    Vaderdag: "hearts",
+    Suikerfeest: "eid",
+    Halloween: "halloween",
+    Sinterklaas: "sinterklaas",
+    Kerst: "christmas",
+    Oudjaar: "fireworks"
+  });
+
   function removeScene() {
-    window.clearTimeout(hideTimer);
-    window.clearTimeout(removeTimer);
-    hideTimer = 0;
-    removeTimer = 0;
     document.getElementById("holidaySceneOverlay")?.remove();
   }
 
-  function hideScene() {
-    const overlay = document.getElementById("holidaySceneOverlay");
-    if (!overlay) return;
-    overlay.classList.add("is-leaving");
-    removeTimer = window.setTimeout(() => overlay.remove(), 650);
+  function showStaticScene(type) {
+    const factory = SCENES[type];
+    if (!factory) return;
+
+    let overlay = document.getElementById("holidaySceneOverlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "holidaySceneOverlay";
+      overlay.className = "holiday-scene-overlay";
+      overlay.setAttribute("aria-hidden", "true");
+      document.body.appendChild(overlay);
+    }
+
+    if (overlay.dataset.scene === type) return;
+    overlay.dataset.scene = type;
+    const sceneMarkup = factory();
+    overlay.innerHTML = `
+      <div class="holiday-scene-side holiday-scene-side-left">
+        <div class="holiday-scene-static-stage">${sceneMarkup}</div>
+      </div>
+      <div class="holiday-scene-side holiday-scene-side-right">
+        <div class="holiday-scene-static-stage">${sceneMarkup}</div>
+      </div>`;
   }
 
-  function showScene(type) {
-    const factory = SCENES[type];
-    if (!factory) {
+  function automaticSceneType() {
+    return THEME_TO_SCENE[document.body.dataset.backgroundTheme || ""] || "";
+  }
+
+  function applyAutomaticHolidayScene(animate = false) {
+    const type = automaticSceneType();
+    if (!type) {
       removeScene();
       return;
     }
-    removeScene();
-    const overlay = document.createElement("div");
-    overlay.id = "holidaySceneOverlay";
-    overlay.className = `holiday-scene-overlay holiday-scene-${type}`;
-    overlay.innerHTML = `<div class="holiday-scene-stage">${factory()}</div>`;
-    document.body.appendChild(overlay);
-    requestAnimationFrame(() => overlay.classList.add("is-visible"));
-
-    const duration = DURATIONS[type] || 8300;
-    hideTimer = window.setTimeout(hideScene, Math.max(1000, duration - 650));
+    showStaticScene(type);
+    if (animate) window.RoosterEffects?.start?.(type);
   }
 
   document.addEventListener("click", (event) => {
     const item = event.target.closest?.("[data-effect]");
     if (!item) return;
     const effect = item.dataset.effect;
-    if (effect === "stop") removeScene();
-    else showScene(effect);
+    if (effect && effect !== "stop" && SCENES[effect]) showStaticScene(effect);
   });
 
-  window.addEventListener("rooster-theme-standard-restored", () => {});
-  window.HolidayScenes = { show: showScene, stop: removeScene };
+  window.addEventListener("rooster-unlocked", () => {
+    requestAnimationFrame(() => applyAutomaticHolidayScene(true));
+  });
+
+  const app = document.getElementById("app");
+  if (app && !app.hidden) applyAutomaticHolidayScene(false);
 })();
