@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "20260903-52";
+  const VERSION = "20260903-53";
 
   function hasAsset(selector, baseName, attribute) {
     return [...document.querySelectorAll(selector)].some((element) => {
@@ -40,6 +40,7 @@
   loadScript("theme.js");
   loadScript("theme-customizer.js");
   loadScript("theme-background-color.js");
+  loadScript("external-theme-buttons.js");
   loadScript("background-brightness.js");
   loadScript("external-sites.js");
   loadScript("external-sites-tweaks.js");
