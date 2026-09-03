@@ -23,11 +23,15 @@
     }
 
     const desiredCss = `
-:root[data-rooster-custom-theme="true"] .external-site-link {
+:root[data-rooster-custom-theme="true"] .external-site-link,
+:root[data-rooster-custom-theme="true"] .public-salary-button,
+:root[data-rooster-custom-theme="true"] .public-salary-history {
   background: ${color} !important;
   border-color: ${color} !important;
 }
-:root[data-rooster-custom-theme="true"] .external-site-link:hover {
+:root[data-rooster-custom-theme="true"] .external-site-link:hover,
+:root[data-rooster-custom-theme="true"] .public-salary-button:hover,
+:root[data-rooster-custom-theme="true"] .public-salary-history:hover {
   background: color-mix(in srgb, ${color} 86%, black) !important;
   border-color: color-mix(in srgb, ${color} 86%, black) !important;
 }`;
