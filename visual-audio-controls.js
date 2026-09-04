@@ -1,53 +1,58 @@
 (() => {
   "use strict";
 
-  function closeEffectsMenu() {
-    const menu = document.getElementById("effectsMenu");
-    const button = document.getElementById("effectsButton");
-    if (!menu || !button || menu.hidden) return;
-    menu.hidden = true;
-    button.setAttribute("aria-expanded", "false");
-  }
+  // Thema- en audio-instellingen blijven bewust verborgen. De bestaande effectenbediening
+  // staat tijdens de ontwikkelfase wel weer aan en hoort onder Achtergrond Helderheid.
+  const ENABLE_THEME_CONTROLS = false;
+  const ENABLE_EFFECT_CONTROLS = true;
 
-  function closeThemePanel() {
-    const panel = document.getElementById("themeCustomizerPanel");
-    const button = document.getElementById("themeCustomizerButton");
-    if (!panel || !button || panel.hidden) return;
-    panel.hidden = true;
-    button.setAttribute("aria-expanded", "false");
-  }
-
-  function buildRightControls(attempt = 0) {
+  function hideThemeControls() {
+    document.getElementById("themeCustomizerPanel")?.setAttribute("hidden", "");
+    document.getElementById("themeSideButtons")?.remove();
+    document.getElementById("themeCustomizerButton")?.remove();
     const shell = document.getElementById("themeCustomizerShell");
-    const themeButton = document.getElementById("themeCustomizerButton");
-    const effectsWrap = document.querySelector(".effects-menu-wrap");
+    if (shell) shell.hidden = true;
+  }
 
-    if (!shell || !themeButton || !effectsWrap) {
-      if (attempt < 40) setTimeout(() => buildRightControls(attempt + 1), 75);
+  function effectsWrap() {
+    return document.querySelector(".effects-menu-wrap");
+  }
+
+  function ensureEffectsDock(attempt = 0) {
+    if (!ENABLE_EFFECT_CONTROLS) return;
+
+    const brightness = document.getElementById("backgroundBrightnessBar");
+    const wrap = effectsWrap();
+    if (!brightness || !wrap) {
+      if (attempt < 60) setTimeout(() => ensureEffectsDock(attempt + 1), 75);
       return;
     }
 
-    let buttons = document.getElementById("themeSideButtons");
-    if (!buttons) {
-      buttons = document.createElement("div");
-      buttons.id = "themeSideButtons";
-      buttons.className = "theme-side-buttons";
-      shell.insertBefore(buttons, shell.firstChild);
-    }
+    document.getElementById("publicEffectsSection")?.remove();
+    wrap.classList.add("brightness-effects-wrap");
+    if (wrap.parentElement !== brightness) brightness.appendChild(wrap);
+  }
 
-    if (themeButton.parentElement !== buttons) buttons.appendChild(themeButton);
-    if (effectsWrap.parentElement !== buttons) buttons.appendChild(effectsWrap);
+  function buildControls() {
+    if (!ENABLE_THEME_CONTROLS) hideThemeControls();
+
+    if (ENABLE_EFFECT_CONTROLS) ensureEffectsDock();
+    else effectsWrap()?.remove();
 
     document.getElementById("audioSettingsButton")?.remove();
     document.getElementById("audioPreviewPanel")?.remove();
-
-    themeButton.addEventListener("click", closeEffectsMenu);
-    document.getElementById("effectsButton")?.addEventListener("click", closeThemePanel);
   }
 
+  window.addEventListener("rooster-unlocked", () => {
+    if (ENABLE_EFFECT_CONTROLS) requestAnimationFrame(() => ensureEffectsDock());
+  });
+  window.addEventListener("rooster-months-updated", () => {
+    if (ENABLE_EFFECT_CONTROLS) requestAnimationFrame(() => ensureEffectsDock());
+  });
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => buildRightControls(), { once: true });
+    document.addEventListener("DOMContentLoaded", buildControls, { once: true });
   } else {
-    buildRightControls();
+    buildControls();
   }
 })();

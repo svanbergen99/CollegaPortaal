@@ -23,6 +23,37 @@
     return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
   }
 
+  // In het roosterbestand staan namen als achternaam/tussenvoegsel/voornaam.
+  // Het laatste naamdeel is daarom de voornaam die in de werker-overzichten getoond wordt.
+  function firstName(value) {
+    const parts = String(value || "").trim().split(/\s+/).filter(Boolean);
+    return parts.at(-1) || "";
+  }
+
+  function firstNameKey(value) {
+    return firstName(value)
+      .toLocaleLowerCase("nl-NL")
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "");
+  }
+
+  function workerDisplayNames(workers) {
+    const counts = new Map();
+    for (const worker of workers) {
+      const key = firstNameKey(worker.name);
+      if (key) counts.set(key, (counts.get(key) || 0) + 1);
+    }
+
+    return workers.map((worker) => {
+      const shortName = firstName(worker.name);
+      const key = firstNameKey(worker.name);
+      const displayName = shortName && (counts.get(key) || 0) === 1
+        ? shortName
+        : String(worker.name || "").trim();
+      return { ...worker, displayName: displayName || shortName };
+    });
+  }
+
   function amsterdamParts(date = new Date()) {
     const parts = new Intl.DateTimeFormat("en-CA", {
       timeZone: TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23"
@@ -55,6 +86,11 @@
     return Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
   }
 
+  function timeFromMinutes(value) {
+    const normalized = ((Number(value) % 1440) + 1440) % 1440;
+    return `${String(Math.floor(normalized / 60)).padStart(2, "0")}:${String(normalized % 60).padStart(2, "0")}`;
+  }
+
   function formatDate(dateKey) {
     const date = new Date(`${dateKey}T12:00:00Z`);
     return new Intl.DateTimeFormat("nl-NL", { timeZone: TIME_ZONE, weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(date);
@@ -70,8 +106,152 @@
     return null;
   }
 
-  function isWorkSchedule(schedule) {
-    return String(schedule?.status || "").trim().toLowerCase() === "work";
+  // De zichtbare hoofdwerktijd (de zwarte balk in het rooster) is leidend.
+  // Interne statusvelden mogen een geldige start- en eindtijd niet uitsluiten.
+  function isTimedPresenceSchedule(schedule) {
+    return Boolean(formatTime(schedule?.start) && formatTime(schedule?.end));
+  }
+
+  // Herkenbare niet-werkactiviteiten onderbreken de zwarte hoofdbalk.
+  // Prefixherkenning vangt o.a. Verlof Bijzonder, Verlof door Traffic,
+  // Afwezig Lang, Afwezig Kort, Ziek, Ziekte en Ziekmelding.
+  function isTimeOffActivity(activity) {
+    const name = String(activity?.name || activity?.label || "").trim().toLowerCase();
+    return /^(?:verlof|afwezig|ziek)/.test(name);
+  }
+
+  // Een normale pauze telt niet als afwezigheid. Staat zo'n pauze echter binnen of precies
+  // tussen afwezigheidsblokken, dan vervalt hij omdat de collega op dat moment niet werkt.
+  function isBreakActivity(activity) {
+    const name = String(activity?.name || activity?.label || "").trim().toLowerCase();
+    return /^(?:break|pauze|lunch|maaltijd)/.test(name);
+  }
+
+  function scheduleBounds(schedule) {
+    const start = minutesOf(schedule?.start);
+    const rawEnd = minutesOf(schedule?.end);
+    if (start === null || rawEnd === null) return null;
+    return { start, end: rawEnd <= start ? rawEnd + 1440 : rawEnd };
+  }
+
+  function activityRange(activity, bounds) {
+    const rawStart = minutesOf(activity?.start);
+    const rawEnd = minutesOf(activity?.end);
+    if (rawStart === null || rawEnd === null || !bounds) return null;
+
+    let start = rawStart;
+    let end = rawEnd <= rawStart ? rawEnd + 1440 : rawEnd;
+    if (bounds.end > 1440 && start < bounds.start) {
+      start += 1440;
+      end += 1440;
+    }
+
+    start = Math.max(bounds.start, start);
+    end = Math.min(bounds.end, end);
+    return end > start ? { start, end } : null;
+  }
+
+  function mergeRanges(ranges) {
+    const sorted = ranges
+      .filter((range) => range && range.end > range.start)
+      .map((range) => ({ start: range.start, end: range.end }))
+      .sort((a, b) => a.start - b.start || a.end - b.end);
+    const merged = [];
+    for (const range of sorted) {
+      const previous = merged.at(-1);
+      if (!previous || range.start > previous.end) {
+        merged.push(range);
+      } else {
+        previous.end = Math.max(previous.end, range.end);
+      }
+    }
+    return merged;
+  }
+
+  function effectiveTimeOffRanges(schedule) {
+    const bounds = scheduleBounds(schedule);
+    if (!bounds) return [];
+
+    const blocked = [];
+    const breaks = [];
+    for (const activity of schedule?.activities || []) {
+      if (!isTimeOffActivity(activity) && !isBreakActivity(activity)) continue;
+
+      const range = activityRange(activity, bounds);
+      if (isTimeOffActivity(activity)) {
+        // Een herkenbare afwezigheid zonder tijden betekent voor deze werkbalk: hele dienst afwezig.
+        if (!range) return [{ start: bounds.start, end: bounds.end }];
+        blocked.push(range);
+      } else if (range) {
+        breaks.push(range);
+      }
+    }
+
+    let mergedBlocked = mergeRanges(blocked);
+    let pendingBreaks = breaks;
+    let changed = true;
+
+    // Pauzes/lunch/maaltijd worden alleen geannuleerd als ze een afwezigheidsblok overlappen
+    // of twee afwezigheidsblokken met elkaar verbinden. Een gewone pauze buiten afwezigheid blijft staan.
+    while (changed && pendingBreaks.length) {
+      changed = false;
+      const remaining = [];
+      for (const pause of pendingBreaks) {
+        const overlapsAbsence = mergedBlocked.some((range) =>
+          Math.max(range.start, pause.start) < Math.min(range.end, pause.end)
+        );
+        const hasLeftAbsence = mergedBlocked.some((range) => range.end >= pause.start && range.end <= pause.end);
+        const hasRightAbsence = mergedBlocked.some((range) => range.start >= pause.start && range.start <= pause.end);
+
+        if (overlapsAbsence || (hasLeftAbsence && hasRightAbsence)) {
+          mergedBlocked = mergeRanges([...mergedBlocked, pause]);
+          changed = true;
+        } else {
+          remaining.push(pause);
+        }
+      }
+      pendingBreaks = remaining;
+    }
+
+    return mergedBlocked;
+  }
+
+  function hasActiveTimeOff(schedule, today, yesterday, nowMinutes) {
+    const date = String(schedule?.date || "").slice(0, 10);
+    const current = date === today
+      ? nowMinutes
+      : (date === yesterday ? nowMinutes + 1440 : null);
+    if (current === null) return false;
+    return effectiveTimeOffRanges(schedule).some((range) => current >= range.start && current < range.end);
+  }
+
+  // Trek Verlof/Afwezig/Ziek en eventueel daardoor vervallen pauzes af van de zwarte hoofdbalk.
+  // Een volledige afwezigheid geeft geen werkblok terug; gedeeltelijke afwezigheid laat alleen
+  // de werkelijk resterende werkblokken zien.
+  function presenceRangesForSchedule(schedule) {
+    const bounds = scheduleBounds(schedule);
+    if (!bounds) return [];
+
+    let ranges = [{ start: bounds.start, end: bounds.end }];
+    for (const blocked of effectiveTimeOffRanges(schedule)) {
+      const next = [];
+      for (const range of ranges) {
+        const cutStart = Math.max(range.start, blocked.start);
+        const cutEnd = Math.min(range.end, blocked.end);
+        if (cutStart >= cutEnd) {
+          next.push(range);
+          continue;
+        }
+        if (range.start < cutStart) next.push({ start: range.start, end: cutStart });
+        if (cutEnd < range.end) next.push({ start: cutEnd, end: range.end });
+      }
+      ranges = next;
+      if (!ranges.length) break;
+    }
+
+    return ranges
+      .filter((range) => range.end > range.start)
+      .map((range) => ({ start: timeFromMinutes(range.start), end: timeFromMinutes(range.end) }));
   }
 
   function timeWindowIsActive(date, start, end, today, yesterday, nowMinutes) {
@@ -84,30 +264,12 @@
       : (date === yesterday && overnight && nowMinutes < endMinutes);
   }
 
-  function isTimeOffActivity(activity) {
-    const type = String(activity?.type || "").trim().toLowerCase();
-    const name = String(activity?.name || activity?.label || "").trim().toLowerCase();
-    return type === "time_off" || type === "day_off" || /^(?:verlof|afwezig)\b/.test(name);
-  }
-
-  function hasActiveTimeOff(schedule, today, yesterday, nowMinutes) {
-    const date = String(schedule?.date || "").slice(0, 10);
-    return (schedule?.activities || []).some((activity) => {
-      if (!isTimeOffActivity(activity)) return false;
-      const start = formatTime(activity?.start);
-      const end = formatTime(activity?.end);
-      if (!start || !end) return date === today;
-      return timeWindowIsActive(date, start, end, today, yesterday, nowMinutes);
-    });
-  }
-
   function collectToday(roster, today) {
     const workers = [];
     for (const employee of roster?.employees || []) {
       const schedules = (employee.schedules || [])
-        .filter((schedule) => String(schedule?.date || "").slice(0, 10) === today && isWorkSchedule(schedule))
-        .map((schedule) => ({ start: formatTime(schedule.start), end: formatTime(schedule.end) }))
-        .filter((schedule) => schedule.start && schedule.end);
+        .filter((schedule) => String(schedule?.date || "").slice(0, 10) === today && isTimedPresenceSchedule(schedule))
+        .flatMap((schedule) => presenceRangesForSchedule(schedule));
       if (!schedules.length) continue;
       schedules.sort((a, b) => a.start.localeCompare(b.start) || a.end.localeCompare(b.end));
       workers.push({ name: employee.name, schedules });
@@ -123,7 +285,7 @@
     const workers = [];
     for (const employee of roster?.employees || []) {
       const active = (employee.schedules || []).map((schedule) => {
-        if (!isWorkSchedule(schedule)) return null;
+        if (!isTimedPresenceSchedule(schedule)) return null;
         const date = String(schedule?.date || "").slice(0, 10);
         const start = formatTime(schedule.start);
         const end = formatTime(schedule.end);
@@ -151,9 +313,10 @@
   }
 
   function render(title, today, workers, emptyText) {
-    const rows = workers.map((worker) => {
+    const namedWorkers = workerDisplayNames(workers);
+    const rows = namedWorkers.map((worker) => {
       const ranges = worker.schedules.map((schedule) => `${schedule.start} – ${schedule.end}`).join(", ");
-      return `<div class="today-worker-row"><span class="today-worker-name">${escapeHtml(worker.name)}</span><span class="today-worker-time">${escapeHtml(ranges)}</span></div>`;
+      return `<div class="today-worker-row"><span class="today-worker-name">${escapeHtml(worker.displayName)}</span><span class="today-worker-time">${escapeHtml(ranges)}</span></div>`;
     }).join("");
     rosterResult.innerHTML = `<div class="today-workers-head"><div><h2>${escapeHtml(title)}</h2><p class="today-workers-date">${escapeHtml(formatDate(today))}</p></div><span class="today-workers-count">${workers.length} collega${workers.length === 1 ? "" : "'s"}</span></div><div class="today-workers-list">${rows || `<div class="no-activities">${escapeHtml(emptyText)}</div>`}</div>`;
     rosterResult.hidden = false;

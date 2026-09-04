@@ -1,0 +1,18 @@
+/* CollegaPortaal: beheerders-/testbediening bewust niet zichtbaar. */
+.effects-menu-wrap,
+#weatherEffectsWrap,
+#videoLibraryWrap {
+  display: none !important;
+}
+
+/* De Rooster/inlog-tegel houdt zijn plek in de layout, maar is volledig
+   transparant en kan niet aangeklikt of met het toetsenbord geactiveerd worden. */
+#publicRosterButton {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  cursor: default !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: transparent !important;
+}

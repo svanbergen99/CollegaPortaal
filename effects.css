@@ -1,7 +1,7 @@
 .effect-canvas {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 10550;
   width: 100vw;
   height: 100vh;
   pointer-events: none;
@@ -103,6 +103,11 @@
 
 .effects-menu-item.stop-effect {
   color: #7c2d38;
+}
+
+/* Payday moet visueel hard binnenkomen, maar zonder de letterlijke tekst "BAM". */
+#paydayEffectOverlay .payday-bam {
+  display: none !important;
 }
 
 @media (max-width: 620px) {
