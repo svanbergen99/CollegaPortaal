@@ -25,7 +25,7 @@ jobs:
         run: |
           set -euo pipefail
           git clone --depth 1 https://github.com/svanbergen99/Roosteroverzicht.git /tmp/roosteroverzicht
-          rsync -a --delete --exclude='.git/' /tmp/roosteroverzicht/ ./
+          rsync -a --delete --exclude='.git/' --exclude='.github/workflows/' /tmp/roosteroverzicht/ ./
 
       - name: Pas CollegaPortaal verschillen toe
         shell: bash
@@ -77,11 +77,16 @@ jobs:
 
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           # Pas alleen de zichtbare/projectnaam en expliciete repository-URL's aan.
+          # De tijdelijke workflow blijft bewust onaangeroerd; die wordt na de sync
+          # apart vervangen door de workflow uit Roosteroverzicht.
           text_exts = {'.html', '.js', '.css', '.json', '.md', '.yml', '.yaml', '.txt'}
           for path in Path('.').rglob('*'):
               if not path.is_file() or '.git' in path.parts or path.suffix.lower() not in text_exts:
+                  continue
+              if path.parts[:2] == ('.github', 'workflows'):
                   continue
               try:
                   text = path.read_text(encoding='utf-8')
@@ -95,8 +100,6 @@ jobs:
 
           agenda = Path('agenda-export.js')
           text = agenda.read_text(encoding='utf-8')
-          # Eigen cache-id voor het collega-portaal.
-          import re
           text = re.sub(r'const VERSION = "[^"]+";', 'const VERSION = "20260904-CP1";', text, count=1)
           if 'loadStyle("collega-portaal.css")' not in text:
               anchor = '  loadStyle("occasion-auto.css");'
