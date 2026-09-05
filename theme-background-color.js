@@ -8,7 +8,7 @@
   function relabelControl() {
     const body = document.getElementById("themeCustomizerAccent");
     const summary = body?.closest("details")?.querySelector("summary");
-    if (summary && summary.textContent !== "Achtergrond kleur") summary.textContent = "Achtergrond kleur";
+    if (summary && summary.textContent !== "Achtergrondkleur") summary.textContent = "Achtergrondkleur";
   }
 
   function selectedBackgroundColor() {
