@@ -107,7 +107,7 @@
         <span class="public-salary-button-main">
           <span class="public-salary-button-icon" aria-hidden="true">€</span>
           <span>
-            <strong>Salaris uitbetaling</strong>
+            <strong>Salarisuitbetaling</strong>
             <small>${upcoming ? `Volgende: ${escapeHtml(formatDate(upcoming.date))}` : "Volgende datum nog niet bekend"}</small>
           </span>
         </span>
@@ -116,7 +116,7 @@
       <div id="publicSalaryPanel" class="public-salary-panel" hidden>
         <div class="public-salary-head">
           <div>
-            <h2>Salaris uitbetaling</h2>
+            <h2>Salarisuitbetaling</h2>
             <p id="publicSalarySubtitle">Huidige en komende maanden</p>
           </div>
           <button id="publicSalaryHistoryButton" class="today-workers-button public-salary-history" type="button" aria-pressed="false">Laat alles zien</button>
