@@ -1,10 +1,12 @@
 /* CollegaPortaal: beheerders-/testbediening bewust niet zichtbaar. */
+.background-brightness-shell .brightness-effects-wrap,
 .effects-menu-wrap,
 #effectsButton,
 #effectsMenu,
 #weatherEffectsWrap,
 #videoLibraryWrap {
   display: none !important;
+  visibility: hidden !important;
   pointer-events: none !important;
 }
 
