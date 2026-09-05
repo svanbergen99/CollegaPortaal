@@ -3,7 +3,7 @@
 
   const SOURCE = "Verlofaanvraag-handmatig.json";
   const VACATION_KEYS = Object.freeze([
-    ["may", "meivakantie", "Meivakantie (incl Koningsdag)"],
+    ["may", "meivakantie", "Meivakantie (incl. Koningsdag)"],
     ["summer", "zomervakantie", "Zomervakantie"],
     ["christmas", "kerstvakantie", "Kerstvakantie"]
   ]);
@@ -97,7 +97,7 @@
           <div><span>Startdatum</span><strong>${esc(row.startDate)}</strong></div>
           <div><span>Eindedatum</span><strong>${esc(row.endDate)}</strong></div>
           <div><span>Weeknummer</span><strong>${esc(row.weekNumber)}</strong></div>
-          <div><span>Inlever Deadline</span><strong>${esc(row.deadline)}</strong></div>
+          <div><span>Inleverdeadline</span><strong>${esc(row.deadline)}</strong></div>
           <div><span>Terugkoppeling WFM</span><strong>${esc(row.feedback)}</strong></div>
         </div>
       </section>`).join("");
@@ -160,7 +160,7 @@
         renderVacation(shell, rows);
       } else {
         const rows = closedRows(data);
-        if (!rows.length) throw new Error("De handmatige gesloten-dagengegevens zijn niet compleet.");
+        if (!rows.length) throw new Error("De handmatige gegevens over gesloten dagen zijn niet compleet.");
         renderClosed(shell, rows);
       }
     } catch (error) {
