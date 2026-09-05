@@ -2,7 +2,28 @@
   "use strict";
 
   const TIME_ZONE = "Europe/Amsterdam";
-  const WEATHER_SELECTOR = "[data-weather-live-clock], .start-weather-scene-location, .public-weather-location";
+  const WEATHER_SELECTOR = "[data-weather-live-clock], .start-weather-scene-location, .public-weather-location, [data-digital-date-day]";
+  const CLOCK_CENTER_STYLE_ID = "clockDateCenterStyle";
+
+  function ensureClockDateCentering() {
+    if (document.getElementById(CLOCK_CENTER_STYLE_ID)) return;
+    const style = document.createElement("style");
+    style.id = CLOCK_CENTER_STYLE_ID;
+    style.textContent = `
+      .start-digital-clock .digital-clock-date {
+        justify-items: center !important;
+        text-align: center !important;
+      }
+      .start-digital-clock .digital-clock-date-day,
+      .start-digital-clock .digital-clock-date-month {
+        justify-self: center !important;
+        width: max-content;
+        max-width: 100%;
+        text-align: center !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
 
   function shortLocationName(value) {
     return String(value || "").split(",")[0].trim();
@@ -21,6 +42,7 @@
   }
 
   function cleanWeatherDisplay() {
+    ensureClockDateCentering();
     const time = currentClock();
     document.querySelectorAll("[data-weather-live-clock]").forEach((node) => {
       if (node.textContent !== time) node.textContent = time;
@@ -29,6 +51,11 @@
     document.querySelectorAll(".start-weather-scene-location, .public-weather-location").forEach((node) => {
       const shortName = shortLocationName(node.textContent);
       if (shortName && node.textContent !== shortName) node.textContent = shortName;
+    });
+
+    document.querySelectorAll("[data-digital-date-day]").forEach((node) => {
+      const cleanDay = String(node.textContent || "").replace(/[()]/g, "").trim();
+      if (cleanDay && node.textContent !== cleanDay) node.textContent = cleanDay;
     });
   }
 
@@ -43,6 +70,7 @@
     return false;
   }
 
+  ensureClockDateCentering();
   cleanWeatherDisplay();
 
   // start-weather.js schrijft nog een tijdzone achter de klok. Door direct op de

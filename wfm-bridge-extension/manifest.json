@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "CollegaPortaal WFM Bridge",
+  "version": "0.1.0",
+  "description": "Runtime-only bridge tussen Genesys WFM en CollegaPortaal. Slaat geen WFM-gegevens of sessies op.",
+  "permissions": ["tabs"],
+  "host_permissions": [
+    "https://genesyswfm.hosting.corp/*",
+    "https://svanbergen99.github.io/CollegaPortaal/*"
+  ],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://genesyswfm.hosting.corp/*"],
+      "js": ["content-wfm.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://svanbergen99.github.io/CollegaPortaal/*"],
+      "js": ["content-rooster.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["page-hook.js"],
+      "matches": ["https://genesyswfm.hosting.corp/*"]
+    }
+  ]
+}
