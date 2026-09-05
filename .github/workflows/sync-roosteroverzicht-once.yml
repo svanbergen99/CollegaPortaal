@@ -1,0 +1,141 @@
+name: Eenmalige Roosteroverzicht sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sync-roosteroverzicht-once.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout CollegaPortaal
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Kopieer Roosteroverzicht volledig
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/svanbergen99/Roosteroverzicht.git /tmp/roosteroverzicht
+          rsync -a --delete --exclude='.git/' --exclude='.github/workflows/' /tmp/roosteroverzicht/ ./
+
+      - name: Behoud CollegaPortaal naam en beperkingen
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cat > collega-portaal.css <<'EOF'
+          /* CollegaPortaal: beheerders-/testbediening bewust niet zichtbaar. */
+          .effects-menu-wrap,
+          #weatherEffectsWrap,
+          #videoLibraryWrap {
+            display: none !important;
+          }
+
+          /* De Rooster/inlog-tegel houdt zijn plek in de layout, maar is volledig
+             transparant en kan niet aangeklikt of met het toetsenbord geactiveerd worden. */
+          #publicRosterButton {
+            opacity: 0 !important;
+            pointer-events: none !important;
+            cursor: default !important;
+            background: transparent !important;
+            border-color: transparent !important;
+            box-shadow: none !important;
+            color: transparent !important;
+          }
+          EOF
+
+          cat > collega-portaal.js <<'EOF'
+          (() => {
+            "use strict";
+
+            function lockRosterButton() {
+              const button = document.getElementById("publicRosterButton");
+              if (!button) return;
+              button.disabled = true;
+              button.tabIndex = -1;
+              button.setAttribute("aria-disabled", "true");
+              button.setAttribute("aria-hidden", "true");
+            }
+
+            lockRosterButton();
+            window.addEventListener("rooster-unlocked", lockRosterButton);
+            new MutationObserver(lockRosterButton).observe(document.documentElement, {
+              childList: true,
+              subtree: true
+            });
+          })();
+          EOF
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          text_exts = {'.html', '.js', '.css', '.json', '.md', '.yml', '.yaml', '.txt'}
+          for path in Path('.').rglob('*'):
+              if not path.is_file() or '.git' in path.parts or path.suffix.lower() not in text_exts:
+                  continue
+              if path.parts[:2] == ('.github', 'workflows'):
+                  continue
+              try:
+                  text = path.read_text(encoding='utf-8')
+              except UnicodeDecodeError:
+                  continue
+              new = text.replace('svanbergen99/Roosteroverzicht', 'svanbergen99/CollegaPortaal')
+              new = new.replace('svanbergen99/roosteroverzicht', 'svanbergen99/CollegaPortaal')
+              new = new.replace('Roosteroverzicht', 'CollegaPortaal')
+              if new != text:
+                  path.write_text(new, encoding='utf-8')
+
+          agenda = Path('agenda-export.js')
+          text = agenda.read_text(encoding='utf-8')
+          text = re.sub(r'const VERSION = "[^"]+";', 'const VERSION = "20260905-CP2";', text, count=1)
+          if 'loadStyle("collega-portaal.css")' not in text:
+              anchor = '  loadStyle("occasion-auto.css");'
+              text = text.replace(anchor, anchor + '\n  loadStyle("collega-portaal.css");')
+          if 'loadScript("collega-portaal.js")' not in text:
+              anchor = '  loadScript("roster-home-button.js");'
+              text = text.replace(anchor, anchor + '\n  loadScript("collega-portaal.js");')
+          agenda.write_text(text, encoding='utf-8')
+
+          index = Path('index.html')
+          text = index.read_text(encoding='utf-8')
+          text = re.sub(r'<title>.*?</title>', '<title>CollegaPortaal</title>', text, count=1, flags=re.S)
+          index.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit volledige sync
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git reset -- .github/workflows/sync-roosteroverzicht-once.yml
+          if git diff --cached --quiet; then
+            echo "Geen inhoudelijke wijzigingen om te committen."
+          else
+            git commit -m "Sync current Roosteroverzicht into CollegaPortaal with portal restrictions"
+            git push origin HEAD:main
+          fi
+
+      - name: Verwijder eenmalige sync-workflow
+        if: always()
+        shell: bash
+        run: |
+          set -e
+          git pull --rebase origin main || true
+          git rm -f .github/workflows/sync-roosteroverzicht-once.yml || true
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Remove one-time sync workflow [skip ci]"
+          git push origin HEAD:main || true
