@@ -37,10 +37,10 @@
       <div class="unlock-card permission-auth-card">
         <h1>Genesys Workforce Management</h1>
         <p>WFM kan om veiligheidsredenen niet binnen CollegaPortaal worden weergegeven.</p>
-        <p>Open de officiële WFM-site in een apart venster. Username en Password worden alleen daar ingevoerd.</p>
+        <p>Open de officiële WFM-site in een apart venster. Je gebruikersnaam en wachtwoord voer je alleen daar in.</p>
         <button id="wfmFallbackOpenButton" class="full-button" type="button">WFM openen</button>
         <button id="wfmFallbackContinueButton" class="permission-auth-back" type="button">Doorgaan naar rooster</button>
-        <div class="permission-auth-error" aria-live="polite">Als Edge popups blokkeert, sta popups voor deze pagina toe.</div>
+        <div class="permission-auth-error" aria-live="polite">Als Edge pop-ups blokkeert, sta dan pop-ups voor deze pagina toe.</div>
       </div>`;
     document.body.appendChild(fallbackOverlay);
     fallbackOverlay.hidden = false;
