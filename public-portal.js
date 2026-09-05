@@ -10,6 +10,14 @@
   body.classList.add("public-portal-mode");
   document.title = "CollegaPortaal";
 
+  // Laad de lokale taalcorrectie automatisch op CollegaPortaal.
+  if (!document.querySelector('script[src^="language-autocorrect.js"]')) {
+    const languageScript = document.createElement("script");
+    languageScript.src = "language-autocorrect.js?v=20260905-1";
+    languageScript.defer = true;
+    document.head.appendChild(languageScript);
+  }
+
   // Het bestaande KCD/Verder-beeld blijft staan. Kernwaarde.png komt er als
   // tweede kaart direct onder te staan op dezelfde welkomstpagina.
   const welcomeCard = welcome.querySelector(".welcome-card");
