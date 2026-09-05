@@ -221,7 +221,7 @@
           <summary>Wettelijke pauzetijden</summary>
           <div class="break-table-wrap">
             <table class="break-table">
-              <thead><tr><th>Werkduur</th><th>Minimum pauze</th><th>Opmerking</th></tr></thead>
+              <thead><tr><th>Werkduur</th><th>Minimale pauze</th><th>Opmerking</th></tr></thead>
               <tbody>
                 <tr><td>Minder dan 5,5 uur</td><td>Geen</td><td>Geen minimum in deze tabel</td></tr>
                 <tr><td>5,5 tot minder dan 10 uur</td><td>30 minuten</td><td>Kan in twee blokken van 15 minuten</td></tr>
@@ -229,7 +229,7 @@
               </tbody>
             </table>
           </div>
-          <p class="break-legal-note">Of een pauze wordt doorbetaald hangt af van cao of arbeidsovereenkomst.</p>
+          <p class="break-legal-note">Of een pauze wordt doorbetaald, hangt af van de cao of de arbeidsovereenkomst.</p>
         </details>
       </div>`;
 
