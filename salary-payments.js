@@ -31,7 +31,7 @@
     salaryButton.id = "salaryPaymentButton";
     salaryButton.className = "today-workers-button";
     salaryButton.type = "button";
-    salaryButton.textContent = "Salaris uitbetaling";
+    salaryButton.textContent = "Salarisuitbetaling";
     action.appendChild(salaryButton);
   }
 
@@ -78,8 +78,8 @@
     }
     const upcoming = nextPayment();
     bar.innerHTML = upcoming
-      ? `<span>Volgende salaris uitbetaling:</span><strong>${formatDate(upcoming.date, false)}</strong>`
-      : `<span>Volgende salaris uitbetaling:</span><strong>Nog niet bekend</strong>`;
+      ? `<span>Volgende salarisuitbetaling:</span><strong>${formatDate(upcoming.date, false)}</strong>`
+      : `<span>Volgende salarisuitbetaling:</span><strong>Nog niet bekend</strong>`;
     bar.hidden = false;
   }
 
@@ -113,7 +113,7 @@
     rosterResult.innerHTML = `
       <div class="today-workers-head salary-payments-head">
         <div>
-          <h2>Salaris uitbetaling</h2>
+          <h2>Salarisuitbetaling</h2>
           <p class="today-workers-date">${showAllPayments ? "Alle bekende uitbetalingsdata" : "Huidige en komende maanden"}</p>
         </div>
         <span class="today-workers-count">${payments.length} betaal${payments.length === 1 ? "datum" : "data"}</span>
@@ -127,7 +127,7 @@
 
   salaryButton.addEventListener("click", (event) => {
     event.preventDefault();
-    if (activeOverviewTitle() === "Salaris uitbetaling") {
+    if (activeOverviewTitle() === "Salarisuitbetaling") {
       closeOverview();
       return;
     }
@@ -137,7 +137,7 @@
 
   rosterResult.addEventListener("click", (event) => {
     const button = event.target.closest(".salary-history-toggle");
-    if (!button || activeOverviewTitle() !== "Salaris uitbetaling") return;
+    if (!button || activeOverviewTitle() !== "Salarisuitbetaling") return;
     event.preventDefault();
     showAllPayments = !showAllPayments;
     renderPayments();
