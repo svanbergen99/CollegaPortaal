@@ -1,0 +1,51 @@
+name: Eenmalige CollegaPortaal effecten-fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-collega-effects-once.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Forceer nieuwste loader en verberg Effecten direct in index
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace('agenda-export.js?v=20260903-69', 'agenda-export.js?v=20260905-CP4')
+
+          marker = '<style id="collega-effects-hard-hide">'
+          if marker not in text:
+              hard_css = '''\n<style id="collega-effects-hard-hide">\nhtml body .background-brightness-shell .brightness-effects-wrap,\nhtml body #effectsButton,\nhtml body #effectsMenu,\nhtml body .effects-menu-wrap,\nhtml body #weatherEffectsWrap,\nhtml body #videoLibraryWrap {\n  display: none !important;\n  visibility: hidden !important;\n  pointer-events: none !important;\n}\n</style>\n'''
+              text = text.replace('</head>', hard_css + '</head>', 1)
+
+          script_marker = 'id="collega-effects-hard-lock"'
+          if script_marker not in text:
+              hard_js = '''\n<script id="collega-effects-hard-lock">\n(() => {\n  const hide = () => {\n    const wrap = document.querySelector('.background-brightness-shell .brightness-effects-wrap');\n    if (wrap) {\n      wrap.hidden = true;\n      wrap.setAttribute('aria-hidden', 'true');\n      wrap.style.setProperty('display', 'none', 'important');\n      wrap.style.setProperty('pointer-events', 'none', 'important');\n    }\n    for (const id of ['effectsButton','effectsMenu','weatherEffectsWrap','videoLibraryWrap']) {\n      const el = document.getElementById(id);\n      if (!el) continue;\n      if ('disabled' in el) el.disabled = true;\n      el.hidden = true;\n      el.setAttribute('aria-hidden', 'true');\n      el.style.setProperty('display', 'none', 'important');\n      el.style.setProperty('pointer-events', 'none', 'important');\n    }\n  };\n  hide();\n  new MutationObserver(hide).observe(document.documentElement, { childList: true, subtree: true });\n  window.addEventListener('rooster-unlocked', hide);\n})();\n</script>\n'''
+              text = text.replace('</body>', hard_js + '</body>', 1)
+
+          p.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Verwijder deze tijdelijke workflow
+        run: rm -f .github/workflows/fix-collega-effects-once.yml
+
+      - name: Commit fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Force hide Effects button and refresh CollegaPortaal loader"
+          git push origin HEAD:main
