@@ -9,7 +9,7 @@
     "https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"
   ]);
   const VACATION_ROWS = Object.freeze([
-    Object.freeze({ key: "may", label: "Meivakantie (incl Koningsdag)", pattern: /mei\s*vakantie/i }),
+    Object.freeze({ key: "may", label: "Meivakantie (incl. Koningsdag)", pattern: /mei\s*vakantie/i }),
     Object.freeze({ key: "summer", label: "Zomervakantie", pattern: /zomer\s*vakantie/i }),
     Object.freeze({ key: "christmas", label: "Kerstvakantie", pattern: /kerst\s*vakantie/i })
   ]);
@@ -73,7 +73,7 @@
     shell.className = "external-site-dropdown vacation-leave-dropdown";
     shell.innerHTML = `
       <button id="vacationLeaveButton" class="external-site-link external-site-dropdown-trigger" type="button" aria-expanded="false" aria-controls="vacationLeavePanel" disabled>
-        <strong>Vakantie Verlof Aanvragen</strong>
+        <strong>Vakantieverlof aanvragen</strong>
         <span class="vacation-leave-toggle" aria-hidden="true">▾</span>
       </button>
       <div id="vacationLeavePanel" class="vacation-leave-panel" hidden>
@@ -264,7 +264,7 @@
           <div><span>Startdatum</span><strong>${escapeHtml(row.startDate)}</strong></div>
           <div><span>Eindedatum</span><strong>${escapeHtml(row.endDate)}</strong></div>
           <div><span>Weeknummer</span><strong>${escapeHtml(row.weekNumber)}</strong></div>
-          <div><span>Inlever Deadline</span><strong>${escapeHtml(row.deadline)}</strong></div>
+          <div><span>Inleverdeadline</span><strong>${escapeHtml(row.deadline)}</strong></div>
           <div><span>Terugkoppeling WFM</span><strong>${escapeHtml(row.feedback)}</strong></div>
         </div>
       </section>`).join("");
