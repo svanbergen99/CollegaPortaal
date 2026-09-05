@@ -8,31 +8,31 @@
 
   const GROUPS = Object.freeze([
     Object.freeze({
-      title: "Belangrijke Websites Werk",
+      title: "Belangrijke websites voor werk",
       links: Object.freeze([
         Object.freeze({ label: "1MDW", url: "https://azkrplbs001.az.unix.corp:44300/sap(bD1ubCZjPTEwMCZkPW1pbg==)/bc/bsp/sap/crm_ui_start/default.htm" }),
         Object.freeze({ label: "Compliance Check", url: "https://svanbergen99.github.io/Checklist/" }),
         LEAVE_REQUEST,
-        Object.freeze({ label: "Beschikbaarheid Berekenen", url: "./ASES_Roosterplanner.html", internal: true }),
+        Object.freeze({ label: "Beschikbaarheid berekenen", url: "./ASES_Roosterplanner.html", internal: true }),
         Object.freeze({ label: "Brein", url: "https://brein-sio-particulier.custhelp.com/app/home/" }),
-        Object.freeze({ label: "Beschikbaarheid Doorgeven", url: "https://genesyswfm.hosting.corp/Puntensysteem" }),
+        Object.freeze({ label: "Beschikbaarheid doorgeven", url: "https://genesyswfm.hosting.corp/Puntensysteem" }),
         Object.freeze({ label: "Rooster", url: "https://genesyswfm.hosting.corp/wfm/Login.jsp" }),
-        Object.freeze({ label: "Wall board", url: "https://achmea-production-1-a3srealtime-eu-west-1-prod.kb.eu-west-1.aws.found.io/s/centraal-beheer/app/dashboards#/view/731a7b2c-c25f-4ff6-a032-5f62ef6d2272?_g=(filters:!())" }),
-        Object.freeze({ label: "Noodprocedure formulier", url: "https://achmea.sharepoint.com/sites/SP-15261/Noodprocedures/Noodprocedures.aspx", warning: "Alleen gebruiken als Traffic toestemming geeft" }),
-        Object.freeze({ label: "Werkbriefjes / Loonstrook", url: "https://klantcontactdiensten.nocore.nl/" }),
+        Object.freeze({ label: "Wallboard", url: "https://achmea-production-1-a3srealtime-eu-west-1-prod.kb.eu-west-1.aws.found.io/s/centraal-beheer/app/dashboards#/view/731a7b2c-c25f-4ff6-a032-5f62ef6d2272?_g=(filters:!())" }),
+        Object.freeze({ label: "Noodprocedureformulier", url: "https://achmea.sharepoint.com/sites/SP-15261/Noodprocedures/Noodprocedures.aspx", warning: "Alleen gebruiken als Traffic toestemming geeft" }),
+        Object.freeze({ label: "Werkbriefjes / loonstrook", url: "https://klantcontactdiensten.nocore.nl/" }),
         Object.freeze({ label: "NPS", url: "https://dashboards.insights.metrixlab.com/Account/Login?ReturnUrl=%2fDashboard%2fDashboard%2f%3fProjectId%3d48316%26ProjectDashboardId%3d22&ProjectId=48316&ProjectDashboardId=22" }),
         Object.freeze({ label: "Meldcode opvragen", url: "https://auto.dispatch.nl" }),
         Object.freeze({ label: "RoyData", url: "https://portal.stichting-eps.nl/login" })
       ])
     }),
     Object.freeze({
-      title: "Belangrijke Websites",
+      title: "Belangrijke websites",
       links: Object.freeze([
         Object.freeze({ label: "Blije Klanten Box", url: "https://giftshopcentraalbeheer.nl/login" }),
-        Object.freeze({ label: "Afschrijflijst Woon verzekering", url: "https://www.centraalbeheer.nl/-/media/files/prive/verzekeringen/woonverzekering/afschrijvingslijst.pdf" }),
-        Object.freeze({ label: "WOZ Waardeloket", url: "https://www.wozwaardeloket.nl/" }),
-        Object.freeze({ label: "Kadastriaalekaart", url: "https://kadastralekaart.com/" }),
-        Object.freeze({ label: "Kenteken Check", url: "https://www.centraalbeheer.nl/verzekeringen/autoverzekering/kentekencheck" }),
+        Object.freeze({ label: "Afschrijflijst woonverzekering", url: "https://www.centraalbeheer.nl/-/media/files/prive/verzekeringen/woonverzekering/afschrijvingslijst.pdf" }),
+        Object.freeze({ label: "WOZ-waardeloket", url: "https://www.wozwaardeloket.nl/" }),
+        Object.freeze({ label: "Kadastrale kaart", url: "https://kadastralekaart.com/" }),
+        Object.freeze({ label: "Kentekencheck", url: "https://www.centraalbeheer.nl/verzekeringen/autoverzekering/kentekencheck" }),
         Object.freeze({ label: "RDW", url: "https://www.rdw.nl/" }),
         Object.freeze({ label: "Finnik", url: "https://finnik.nl/" })
       ])
@@ -81,8 +81,8 @@
     section.innerHTML = `
       <div class="external-sites-head">
         <div>
-          <h1>Externe Websites</h1>
-          <p>Handige werklocaties. Iedere knop opent in een nieuw tabblad.</p>
+          <h1>Externe websites</h1>
+          <p>Handige websites voor je werk. Iedere knop opent in een nieuw tabblad.</p>
         </div>
       </div>
       <div class="external-sites-groups">
