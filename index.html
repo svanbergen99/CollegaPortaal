@@ -314,6 +314,19 @@ background: var(--activity-color, #dbe2ea);
 }
 </style>
 <link rel="stylesheet" href="agenda-export.css">
+
+<style id="collega-effects-hard-hide">
+html body .background-brightness-shell .brightness-effects-wrap,
+html body #effectsButton,
+html body #effectsMenu,
+html body .effects-menu-wrap,
+html body #weatherEffectsWrap,
+html body #videoLibraryWrap {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+</style>
 </head>
 <body class="locked">
 <div id="welcomeOverlay" class="overlay" aria-modal="true" role="dialog" aria-labelledby="welcomeTitle">
@@ -864,6 +877,32 @@ renderEmployee(matches[0], false);
 });
 })();
 </script>
-<script src="agenda-export.js?v=20260903-69"></script>
+<script src="agenda-export.js?v=20260905-CP4"></script>
+
+<script id="collega-effects-hard-lock">
+(() => {
+  const hide = () => {
+    const wrap = document.querySelector('.background-brightness-shell .brightness-effects-wrap');
+    if (wrap) {
+      wrap.hidden = true;
+      wrap.setAttribute('aria-hidden', 'true');
+      wrap.style.setProperty('display', 'none', 'important');
+      wrap.style.setProperty('pointer-events', 'none', 'important');
+    }
+    for (const id of ['effectsButton','effectsMenu','weatherEffectsWrap','videoLibraryWrap']) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      if ('disabled' in el) el.disabled = true;
+      el.hidden = true;
+      el.setAttribute('aria-hidden', 'true');
+      el.style.setProperty('display', 'none', 'important');
+      el.style.setProperty('pointer-events', 'none', 'important');
+    }
+  };
+  hide();
+  new MutationObserver(hide).observe(document.documentElement, { childList: true, subtree: true });
+  window.addEventListener('rooster-unlocked', hide);
+})();
+</script>
 </body>
 </html>
