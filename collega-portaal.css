@@ -1,8 +1,11 @@
 /* CollegaPortaal: beheerders-/testbediening bewust niet zichtbaar. */
 .effects-menu-wrap,
+#effectsButton,
+#effectsMenu,
 #weatherEffectsWrap,
 #videoLibraryWrap {
   display: none !important;
+  pointer-events: none !important;
 }
 
 /* De Rooster/inlog-tegel houdt zijn plek in de layout, maar is volledig
