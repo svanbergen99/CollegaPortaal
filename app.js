@@ -49,7 +49,37 @@ async function loadWeather() {
   }
 }
 
-byId("enter").addEventListener("click", () => { byId("welcome").hidden = true; });
+function openPortal() {
+  byId("welcome").hidden = true;
+}
+
+byId("enter").addEventListener("click", openPortal);
+
+let uSequence = "";
+let lastKeyAt = 0;
+
+document.addEventListener("keydown", (event) => {
+  if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+
+  const target = event.target;
+  if (target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+
+  const now = Date.now();
+  if (now - lastKeyAt > 2000) uSequence = "";
+  lastKeyAt = now;
+
+  if (event.key.toLowerCase() === "u") {
+    uSequence += "u";
+    if (uSequence === "uuu") {
+      openPortal();
+      uSequence = "";
+    }
+    return;
+  }
+
+  uSequence = "";
+});
+
 updateClock();
 setInterval(updateClock, 1000);
 void loadWeather();
