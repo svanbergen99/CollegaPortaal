@@ -1,0 +1,257 @@
+/* Weer is uitsluitend voor de openbare startpagina. */
+body:not(.public-portal-mode) #publicWeatherBars,
+body:not(.public-portal-mode) #startWeatherScene,
+body.roster-access-active #publicWeatherBars,
+body.roster-access-active #startWeatherScene {
+  display: none !important;
+}
+
+.public-weather-bars {
+  width: min(1180px, 100%);
+  margin: 0 auto 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.public-weather-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(170px, .95fr) minmax(0, 1.4fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 92px;
+  padding: 13px 14px;
+  border: 1px solid rgba(123,47,115,.18);
+  border-radius: 17px;
+  background: rgba(255,255,255,.93);
+  box-shadow: 0 9px 26px rgba(15,23,42,.08);
+  backdrop-filter: blur(7px);
+}
+
+.public-weather-summary {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.public-weather-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #fef3c7, #dbeafe);
+  font-size: 30px;
+}
+
+.public-weather-copy { display: grid; gap: 2px; min-width: 0; }
+.public-weather-copy small {
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.public-weather-mainline { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+.public-weather-temperature { font-size: 25px; font-weight: 950; line-height: 1; white-space: nowrap; }
+.public-weather-condition { color: var(--accent-dark); font-size: 13px; font-weight: 850; overflow-wrap: anywhere; }
+.public-weather-location { color: var(--ink); font-size: 13px; font-weight: 900; overflow-wrap: anywhere; }
+
+.public-weather-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+.public-weather-detail {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid rgba(148,163,184,.24);
+  border-radius: 9px;
+  background: rgba(248,250,252,.76);
+}
+.public-weather-detail span { color: var(--muted); font-size: 9.5px; font-weight: 800; }
+.public-weather-detail strong { font-size: 12px; font-weight: 900; overflow-wrap: anywhere; }
+
+.public-weather-edit {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid #cfc4ce;
+  border-radius: 11px;
+  background: #fff;
+  color: var(--accent-dark);
+  font-size: 20px;
+  line-height: 1;
+}
+.public-weather-edit:hover { background: var(--soft-accent); }
+.public-weather-note {
+  grid-column: 1 / -1;
+  margin-top: -3px;
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+/* Grote weerscène: vult de volledige vrije linkerkolom naast de 1180px startpagina.
+   De buitenmarge (20px) en tussenruimte (12px) volgen dezelfde afstanden als de pagina. */
+.start-weather-scene-large {
+  position: fixed;
+  left: 20px;
+  top: 52px;
+  bottom: 52px;
+  z-index: 115;
+  width: calc((100vw - 1180px) / 2 - 32px);
+  height: auto;
+  pointer-events: none;
+}
+.start-weather-scene-sky {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.78);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(186,230,253,.96), rgba(226,232,240,.94));
+  box-shadow: 0 24px 70px rgba(15,23,42,.18), inset 0 0 0 1px rgba(255,255,255,.62);
+  backdrop-filter: blur(5px);
+}
+.start-weather-scene-sky::before,
+.start-weather-scene-sky::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+.start-weather-scene-sky::before {
+  inset: auto -15% -16% -15%;
+  height: 44%;
+  border-radius: 50% 50% 0 0;
+  background: rgba(255,255,255,.45);
+}
+.start-weather-scene-sky::after {
+  inset: 0;
+  opacity: .42;
+  background: radial-gradient(circle at 28% 20%, rgba(255,255,255,.9), transparent 22%);
+}
+.start-weather-scene-sky[data-weather-effect="sun"] { background: linear-gradient(180deg, #7dd3fc 0%, #fde68a 100%); }
+.start-weather-scene-sky[data-weather-effect="rain"] { background: linear-gradient(180deg, #64748b 0%, #bfdbfe 100%); }
+.start-weather-scene-sky[data-weather-effect="fog"] { background: linear-gradient(180deg, #cbd5e1 0%, #f8fafc 100%); }
+.start-weather-scene-sky[data-weather-effect="cloudy"] { background: linear-gradient(180deg, #bae6fd 0%, #cbd5e1 100%); }
+.start-weather-scene-sky[data-weather-effect="snow"] { background: linear-gradient(180deg, #dbeafe 0%, #ffffff 100%); }
+.start-weather-scene-sky[data-weather-effect="thunder"] { background: linear-gradient(180deg, #334155 0%, #a78bfa 100%); }
+.start-weather-scene-sky[data-weather-effect="wind"] { background: linear-gradient(180deg, #a5f3fc 0%, #e2e8f0 100%); }
+.start-weather-scene-sky[data-weather-effect="rainbow"] { background: linear-gradient(180deg, #7dd3fc 0%, #fce7f3 100%); }
+.start-weather-scene-icon {
+  position: relative;
+  z-index: 2;
+  display: block;
+  font-size: clamp(54px, calc((100vw - 1180px) * .28), 180px);
+  line-height: 1;
+  filter: drop-shadow(0 14px 22px rgba(15,23,42,.2));
+}
+
+/* De illustratie vertelt zelf al welk weer het is; geen extra tekst onder het beeld. */
+.start-weather-scene-sky strong,
+.start-weather-scene-sky [data-weather-scene-label] {
+  display: none !important;
+}
+
+/* Weer-effecten staat in dezelfde rechter bedieningskolom als Effecten en Video. */
+.background-brightness-shell .weather-effects-wrap {
+  position: relative;
+  width: 100%;
+}
+.background-brightness-shell .weather-effects-button {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 13px;
+  border: 1px solid #cfc4ce;
+  border-radius: 12px;
+  background: rgba(255,255,255,.94);
+  color: var(--accent-dark);
+  box-shadow: 0 5px 18px rgba(15,23,42,.12);
+  backdrop-filter: blur(6px);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.background-brightness-shell .weather-effects-button:hover,
+.background-brightness-shell .weather-effects-button[aria-expanded="true"] {
+  background: var(--soft-accent);
+  border-color: #bca9ba;
+}
+.weather-effects-menu {
+  position: absolute;
+  z-index: 134;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(280px, calc(100vw - 28px));
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 18px 44px rgba(15,23,42,.20);
+  backdrop-filter: blur(8px);
+}
+.weather-effects-menu[hidden] { display: none !important; }
+.weather-effects-item {
+  display: grid;
+  grid-template-columns: 30px minmax(0,1fr);
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  font-weight: 800;
+}
+.weather-effects-item:hover,
+.weather-effects-item.is-active { background: var(--soft-accent); color: var(--accent-dark); }
+.weather-effects-item > span:first-child { font-size: 21px; }
+
+html[data-theme="dark"] .public-weather-card,
+html[data-theme="dark"] .weather-effects-menu {
+  border-color: #465263;
+  background: rgba(27,34,43,.96);
+  color: #edf2f7;
+}
+html[data-theme="dark"] .public-weather-detail { border-color: #3f4a58; background: #1c2530; }
+html[data-theme="dark"] .public-weather-edit,
+html[data-theme="dark"] .background-brightness-shell .weather-effects-button {
+  border-color: #465263;
+  background: #1f2937;
+  color: #f0b5e8;
+}
+html[data-theme="dark"] .weather-effects-item { color: #edf2f7; }
+
+/* Onder deze breedte is er geen bruikbare vrije linkerkolom meer.
+   Het weerbeeld verdwijnt dan in plaats van bovenop de startpagina te komen. */
+@media (max-width: 1360px) {
+  .start-weather-scene-large { display: none !important; }
+}
+@media (max-width: 900px) {
+  .public-weather-bars { grid-template-columns: 1fr; }
+}
+@media (max-width: 620px) {
+  .public-weather-card {
+    grid-template-columns: 1fr auto;
+    padding: 12px;
+  }
+  .public-weather-details { grid-column: 1 / -1; }
+  .public-weather-note { grid-column: 1 / -1; }
+  .public-weather-mainline { align-items: flex-start; flex-direction: column; gap: 2px; }
+}

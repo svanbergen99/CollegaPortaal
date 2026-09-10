@@ -1,0 +1,35 @@
+name: Repo health
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check local references and JavaScript syntax
+        id: health
+        shell: bash
+        run: |
+          set +e
+          node tools/repo-health-check.mjs 2>&1 | tee repo-health-report.txt
+          status=${PIPESTATUS[0]}
+          echo "exit_code=${status}" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Upload health report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repo-health-report
+          path: repo-health-report.txt
+          retention-days: 3
+      - name: Enforce health result
+        if: steps.health.outputs.exit_code != '0'
+        run: exit 1

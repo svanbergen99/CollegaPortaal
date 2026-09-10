@@ -1,0 +1,49 @@
+# CollegaPortaal security baseline
+# Secrets and credentials must never be committed.
+
+# Environment / secret files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+credentials*.json
+service-account*.json
+service_account*.json
+secrets*.json
+secret*.json
+**/secrets/**
+**/private/**
+
+# Local databases / queues / exports
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.bak
+*.backup
+*.dump
+*.log
+*.tmp
+*.temp
+
+# Local tooling
+node_modules/
+coverage/
+dist/
+build/
+.next/
+.cache/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local security scan output
+.security-audit/
+security-report*.json
+security-report*.txt
