@@ -24,7 +24,7 @@ const retiredCodePatterns = [
 const secretPatterns = [
   ["private key", /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/],
   ["AWS access key", /\bAKIA[0-9A-Z]{16}\b/],
-  ["GitHub token", /\bgh[pousr]_[A-Za-z0-9_]{20,}\b/],
+  ["GitHub token", /\b(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b/],
   ["Slack token", /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/],
   ["hard-coded bearer token", /\bBearer\s+[A-Za-z0-9._~+\/-]{20,}\b/i],
   ["hard-coded secret assignment", /\b(?:password|passwd|secret|token|api[_-]?key)\b\s*[:=]\s*["'`][^"'`\n]{8,}["'`]/i]
